@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  Project:
+    Type: String
+
+  Environment:
+    Type: String
+
+  VisibilityTimeout:
+    Type: Number
+
+  MessageRetentionPeriod:
+    Type: Number
+
+Resources:
+  Queue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      MessageRetentionPeriod: { Ref: MessageRetentionPeriod }
+      VisibilityTimeout: { Ref: VisibilityTimeout }
+
+Outputs:
+  QueueUrl:
+    Value: { Ref: Queue }
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: Project }
+            - { Ref: Environment }
+            - queue
+            - url
