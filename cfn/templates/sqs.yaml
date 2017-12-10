@@ -31,3 +31,14 @@ Outputs:
             - { Ref: Environment }
             - queue
             - url
+  QueueArn:
+    Value:
+      "Fn::GetAtt": [Queue, Arn]
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: Project }
+            - { Ref: Environment }
+            - queue
+            - arn

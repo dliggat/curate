@@ -1,0 +1,14 @@
+StackName: cursqs-driver
+Template: templates/lambda.yaml
+
+Parameters:
+  ProjectName: cursqs
+  EnvironmentName: development
+  # ScheduleExpression:
+  Runtime: python2.7
+  Timeout: 120
+  MemorySize: 256
+  QueueUrl: https://sqs.us-west-2.amazonaws.com/824550351281/cursqs-development-Queue-VF7QJ75CC880
+
+Capabilities:
+  - CAPABILITY_IAM
