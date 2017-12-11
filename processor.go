@@ -113,7 +113,7 @@ func createAthenaTable(sess *session.Session, tableprefix string, database strin
 	svcAthena := athena.New(sess)
 
 	sql := "CREATE DATABASE IF NOT EXISTS `" + database + "`"
-	if err := sendQuery(svcAthena, "default", sql, meta["AccountId"].(string), meta["region"].(string)); err != nil {
+	if err := sendQuery(svcAthena, "default", sql, meta["accountId"].(string), meta["region"].(string)); err != nil {
 		return errors.New("Could not create Athena Database, error: " + err.Error())
 	}
 
@@ -126,7 +126,7 @@ func createAthenaTable(sess *session.Session, tableprefix string, database strin
 	table := tableprefix + "_" + start.Format("200601")
 
 	sql = "CREATE EXTERNAL TABLE IF NOT EXISTS `" + table + "` (" + cols + ") STORED AS PARQUET LOCATION '" + s3path + "'"
-	if err := sendQuery(svcAthena, database, sql, meta["AccountId"].(string), meta["region"].(string)); err != nil {
+	if err := sendQuery(svcAthena, database, sql, meta["accountId"].(string), meta["region"].(string)); err != nil {
 		return errors.New("Could not create Athena Database, error: " + err.Error())
 	}
 	return nil
