@@ -22,7 +22,6 @@ _testmain.go
 *.exe
 *.test
 *.prof
-bin/*
 *.DS_Store
 
 src/github.com.*
