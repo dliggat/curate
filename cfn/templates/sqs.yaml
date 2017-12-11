@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Parameters:
-  Project:
+  ProjectName:
     Type: String
 
-  Environment:
+  EnvironmentName:
     Type: String
 
   VisibilityTimeout:
@@ -27,8 +27,8 @@ Outputs:
       Name:
         "Fn::Join":
           - "-"
-          - - { Ref: Project }
-            - { Ref: Environment }
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
             - queue
             - url
   QueueArn:
@@ -38,7 +38,7 @@ Outputs:
       Name:
         "Fn::Join":
           - "-"
-          - - { Ref: Project }
-            - { Ref: Environment }
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
             - queue
             - arn

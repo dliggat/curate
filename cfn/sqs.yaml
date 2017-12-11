@@ -2,8 +2,8 @@ StackName: cursqs-development
 Template: templates/sqs.yaml
 
 Parameters:
-  Project: cursqs
-  Environment: development
+  ProjectName: cursqs
+  EnvironmentName: development
   VisibilityTimeout: 3600
   MessageRetentionPeriod: 1209600
 
