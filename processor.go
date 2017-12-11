@@ -36,7 +36,7 @@ func getInstanceMetadata(sess *session.Session) map[string]interface{} {
 	// if we havent obtained instance meta-data fetch account from STS - likely were not on EC2
 	_, ok := m["region"].(string)
 	if !ok {
-		svc := sts.New(session.New())
+		svc := sts.New(sess)
 		result, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 		if err == nil {
 			m = make(map[string]interface{})
@@ -55,11 +55,9 @@ func getParams(queueUrl *string, topLevelDestPath *string) error {
 	if len(*queueUrl) < 1 {
 		return errors.New("Provide valid SQS Queue URL")
 	}
-
 	if len(*topLevelDestPath) < 1 {
 		return errors.New("Provide valid Destination Path")
 	}
-
 	return nil
 }
 
@@ -68,7 +66,6 @@ Function takes SQL to send to Athena converts into JSON to send to Athena HTTP p
 Then recieves responses in JSON which is converted back into a struct and returned
 */
 func sendQuery(svc *athena.Athena, db string, sql string, account string, region string) error {
-
 	var s athena.StartQueryExecutionInput
 	s.SetQueryString(sql)
 
@@ -109,7 +106,6 @@ func sendQuery(svc *athena.Athena, db string, sql string, account string, region
 }
 
 func createAthenaTable(sess *session.Session, tableprefix string, database string, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}) error {
-
 	if len(database) < 1 {
 		database = "cur"
 	}
@@ -133,7 +129,6 @@ func createAthenaTable(sess *session.Session, tableprefix string, database strin
 	if err := sendQuery(svcAthena, database, sql, meta["AccountId"].(string), meta["region"].(string)); err != nil {
 		return errors.New("Could not create Athena Database, error: " + err.Error())
 	}
-
 	return nil
 }
 
@@ -243,11 +238,11 @@ func main() {
 					doLog(logger, "Failed to decode message job: "+err.Error())
 				} else {
 					doLog(logger, "Starting processing of job, arn: "+m.SourceRoleArn+" on bucket: "+m.SourceBucket)
-					CURColumns, s3path, err := processCUR(m, topLevelDestPath)
+					columns, s3path, err := processCUR(m, topLevelDestPath)
 					if err != nil {
 						doLog(logger, "Failed to process CUR conversion, error: "+err.Error())
 					} else {
-						if err = createAthenaTable(sess, m.CurReportDescriptor, m.CurDatabase, CURColumns, s3path, meta); err != nil {
+						if err = createAthenaTable(sess, m.CurReportDescriptor, m.CurDatabase, columns, s3path, meta); err != nil {
 							doLog(logger, "Falied to create/update Athena tables, error: "+err.Error())
 						} else {
 							// send back success of processing messages
