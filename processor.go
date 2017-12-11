@@ -7,29 +7,43 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/andyfase/CURdashboard/go/curconvert"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/athena"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/jcxplorer/cwlogger"
 )
 
-func getInstanceMetadata() map[string]interface{} {
+func getInstanceMetadata(sess *session.Session) map[string]interface{} {
 	c := &http.Client{
 		Timeout: 100 * time.Millisecond,
 	}
 	resp, err := c.Get("http://169.254.169.254/latest/dynamic/instance-identity/document")
 	var m map[string]interface{}
-	if err != nil {
-		return m
+	if err == nil {
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			_ = json.Unmarshal(body, &m)
+		}
 	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	// Unmrshall json, if it errors ignore and return empty map
-	_ = json.Unmarshal(body, &m)
+	// if we havent obtained instance meta-data fetch account from STS - likely were not on EC2
+	_, ok := m["region"].(string)
+	if !ok {
+		svc := sts.New(session.New())
+		result, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+		if err == nil {
+			m = make(map[string]interface{})
+			m["accountId"] = *result.Account
+			m["region"] = *sess.Config.Region
+		}
+	}
 	return m
 }
 
@@ -49,6 +63,80 @@ func getParams(queueUrl *string, topLevelDestPath *string) error {
 	return nil
 }
 
+/*
+Function takes SQL to send to Athena converts into JSON to send to Athena HTTP proxy and then sends it.
+Then recieves responses in JSON which is converted back into a struct and returned
+*/
+func sendQuery(svc *athena.Athena, db string, sql string, account string, region string) error {
+
+	var s athena.StartQueryExecutionInput
+	s.SetQueryString(sql)
+
+	var q athena.QueryExecutionContext
+	q.SetDatabase(db)
+	s.SetQueryExecutionContext(&q)
+
+	var r athena.ResultConfiguration
+	r.SetOutputLocation("s3://aws-athena-query-results-" + account + "-" + region + "/")
+	s.SetResultConfiguration(&r)
+
+	result, err := svc.StartQueryExecution(&s)
+	if err != nil {
+		return errors.New("Error Querying Athena, StartQueryExecution: " + err.Error())
+	}
+
+	var qri athena.GetQueryExecutionInput
+	qri.SetQueryExecutionId(*result.QueryExecutionId)
+
+	var qrop *athena.GetQueryExecutionOutput
+	duration := time.Duration(2) * time.Second
+
+	for {
+		qrop, err = svc.GetQueryExecution(&qri)
+		if err != nil {
+			return errors.New("Error Querying Athena, GetQueryExecution: " + err.Error())
+		}
+		if *qrop.QueryExecution.Status.State != "RUNNING" {
+			break
+		}
+		time.Sleep(duration)
+	}
+
+	if *qrop.QueryExecution.Status.State != "SUCCEEDED" {
+		return errors.New("Error Querying Athena, completion state is NOT SUCCEEDED, state is: " + *qrop.QueryExecution.Status.State)
+	}
+	return nil
+}
+
+func createAthenaTable(sess *session.Session, tableprefix string, database string, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}) error {
+
+	if len(database) < 1 {
+		database = "cur"
+	}
+
+	svcAthena := athena.New(sess)
+
+	sql := "CREATE DATABASE IF NOT EXISTS `" + database + "`"
+	if err := sendQuery(svcAthena, "default", sql, meta["AccountId"].(string), meta["region"].(string)); err != nil {
+		return errors.New("Could not create Athena Database, error: " + err.Error())
+	}
+
+	var cols string
+	for col := range columns {
+		cols += "`" + columns[col].Name + "` " + columns[col].Type + ",\n"
+	}
+	cols = cols[:strings.LastIndex(cols, ",")]
+	start := time.Now()
+	table := tableprefix + "_" + start.Format("200601")
+
+	sql = "CREATE EXTERNAL TABLE IF NOT EXISTS `" + table + "` (" + cols + ") STORED AS PARQUET LOCATION '" + s3path + "'"
+	if err := sendQuery(svcAthena, database, sql, meta["AccountId"].(string), meta["region"].(string)); err != nil {
+		return errors.New("Could not create Athena Database, error: " + err.Error())
+	}
+
+	return nil
+}
+
 type Message struct {
 	CurReportDescriptor   string `json:"cur_report_descriptor"`
 	SourceBucket          string `json:"source_bucket"`
@@ -59,14 +147,15 @@ type Message struct {
 	SourceExternalId      string `json:"source_external_id"`
 	DestinationRoleArn    string `json:"destination_role_arn"`
 	DestinationExternalId string `json:"destination_external_id"`
+	CurDatabase           string `json:"cur_database"`
 }
 
-func processCUR(m Message, topLevelDestPath string) error {
+func processCUR(m Message, topLevelDestPath string) ([]curconvert.CurColumn, string, error) {
 	if len(m.SourceBucket) < 1 {
-		return errors.New("Must supply a source bucket")
+		return nil, "", errors.New("Must supply a source bucket")
 	}
 	if len(m.CurReportDescriptor) < 1 {
-		return errors.New("Must supply a report descriptor")
+		return nil, "", errors.New("Must supply a report descriptor")
 	}
 
 	start := time.Now()
@@ -82,7 +171,17 @@ func processCUR(m Message, topLevelDestPath string) error {
 	if len(m.DestinationRoleArn) > 1 {
 		cc.SetSourceRole(m.DestinationRoleArn, m.DestinationExternalId)
 	}
-	return cc.ConvertCur()
+
+	if err := cc.ConvertCur(); err != nil {
+		return nil, "", err
+	}
+
+	cols, err := cc.GetCURColumns()
+	if err != nil {
+		return nil, "", errors.New("Could not obtain CUR columns: " + err.Error())
+	}
+
+	return cols, "s3://" + m.DestinationBucket + "/" + destPath + "/", nil
 }
 
 func doLog(logger *cwlogger.Logger, m string) {
@@ -99,17 +198,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// Grab instance meta-data
-	meta := getInstanceMetadata()
-
-	// Check if running on EC2 or local
-	_, ec2 := meta["region"].(string)
-
-	// AWS sess
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
+	meta := getInstanceMetadata(sess)
+
+	// Check if running on EC2
+	_, ec2 := meta["instanceId"].(string)
 	var logger *cwlogger.Logger
 	if ec2 { // Init Cloudwatch Logger class if were running on EC2
 		logger, err := cwlogger.New(&cwlogger.Config{
@@ -141,27 +237,30 @@ func main() {
 		if err != nil {
 			doLog(logger, err.Error())
 		} else {
-			for _, message := range resp.Messages { // loop through messages in array
-				// marshall JSON Body of message
+			for _, message := range resp.Messages {
 				var m Message
 				if err := json.Unmarshal([]byte(*message.Body), &m); err != nil {
 					doLog(logger, "Failed to decode message job: "+err.Error())
 				} else {
-					// Do CUR conversion
 					doLog(logger, "Starting processing of job, arn: "+m.SourceRoleArn+" on bucket: "+m.SourceBucket)
-					if err = processCUR(m, topLevelDestPath); err != nil {
+					CURColumns, s3path, err := processCUR(m, topLevelDestPath)
+					if err != nil {
 						doLog(logger, "Failed to process CUR conversion, error: "+err.Error())
 					} else {
-						// send back success of processing messages
-						paramsDelete := &sqs.DeleteMessageInput{
-							QueueUrl:      aws.String(queueUrl),
-							ReceiptHandle: aws.String(*message.ReceiptHandle),
-						}
-						_, err = svc.DeleteMessage(paramsDelete)
-						if err != nil {
-							doLog(logger, "Failed to delete SQS message from queue, error: "+err.Error())
+						if err = createAthenaTable(sess, m.CurReportDescriptor, m.CurDatabase, CURColumns, s3path, meta); err != nil {
+							doLog(logger, "Falied to create/update Athena tables, error: "+err.Error())
 						} else {
-							doLog(logger, "Completed processing of job, arn: "+m.SourceRoleArn+" on bucket: "+m.SourceBucket)
+							// send back success of processing messages
+							paramsDelete := &sqs.DeleteMessageInput{
+								QueueUrl:      aws.String(queueUrl),
+								ReceiptHandle: aws.String(*message.ReceiptHandle),
+							}
+							_, err = svc.DeleteMessage(paramsDelete)
+							if err != nil {
+								doLog(logger, "Failed to delete SQS message from queue, error: "+err.Error())
+							} else {
+								doLog(logger, "Completed processing of job, arn: "+m.SourceRoleArn+" on bucket: "+m.SourceBucket)
+							}
 						}
 					}
 				}
