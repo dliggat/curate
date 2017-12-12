@@ -1,12 +1,12 @@
 [
   {
     "ParameterKey": "ProjectName",
-    "ParameterValue": "curate",
+    "ParameterValue": "curate-configuration",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "EnvironmentName",
-    "ParameterValue": "development",
+    "ParameterValue": "prod",
     "UsePreviousValue": false
   },
   {
