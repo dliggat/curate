@@ -26,8 +26,11 @@ Parameters:
     Type: Number
     Description: Memory for the function in MB
 
-  QueueUrl:
-    Type: String
+  VisibilityTimeout:
+    Type: Number
+
+  MessageRetentionPeriod:
+    Type: Number
 
 Conditions:
   HasSchedule:
@@ -37,6 +40,12 @@ Conditions:
           - ""
 
 Resources:
+  Queue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      MessageRetentionPeriod: { Ref: MessageRetentionPeriod }
+      VisibilityTimeout: { Ref: VisibilityTimeout }
+
   LambdaFunction:
     Type: AWS::Lambda::Function
     Metadata:
@@ -77,14 +86,7 @@ Resources:
                       client.send_message(QueueUrl=queue_url, MessageBody=payload)
 
             - table: { Ref: ResultTable }
-              queue_url:
-                "Fn::ImportValue":
-                  "Fn::Join":
-                    - "-"
-                    - - cursqs
-                      - { Ref: EnvironmentName }
-                      - queue
-                      - url
+              queue_url: { Ref: Queue }
 
 
       Role: { "Fn::GetAtt": [ LambdaFunctionExecutionRole, Arn ] }
@@ -95,6 +97,7 @@ Resources:
       Environment:
         Variables:
           EnvironmentName: { Ref: EnvironmentName }
+          ProjectName: { Ref: ProjectName }
 
 
   LambdaFunctionExecutionRole:
@@ -166,28 +169,18 @@ Resources:
                 Action:
                   - "sqs:SendMessage"
                 Resource:
-                  "Fn::ImportValue":
-                    "Fn::Join":
-                      - "-"
-                      - - cursqs
-                        - { Ref: EnvironmentName }
-                        - queue
-                        - arn
+                  "Fn::GetAtt": [Queue, Arn]
 
   ResultTable:
     Type: AWS::DynamoDB::Table
-    # DeletionPolicy: Retain
+    DeletionPolicy: Retain
     Properties:
       AttributeDefinitions:
         - AttributeName: cur_report_descriptor
           AttributeType: S
-        # - AttributeName: Timestamp
-        #   AttributeType: S
       KeySchema:
         - AttributeName: cur_report_descriptor
           KeyType: HASH
-        # - AttributeName: Timestamp
-        #   KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: 10
         WriteCapacityUnits: 10
@@ -219,6 +212,27 @@ Resources:
           Id: ScheduledRule
 
 Outputs:
+  QueueUrl:
+    Value: { Ref: Queue }
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - queue
+            - url
+  QueueArn:
+    Value:
+      "Fn::GetAtt": [Queue, Arn]
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - queue
+            - arn
   LambdaFunction:
     Value: { Ref : LambdaFunction }
   LambdaFunctionARN:
