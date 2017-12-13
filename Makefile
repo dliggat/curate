@@ -1,4 +1,5 @@
-.PHONY: init create-stack update-stack delete-stack describe-stack invoke test clean build _check-arn deploy
+.PHONY: _check-params _check-template create-stack update-stack delete-stack describe-stack build
+BINARY = processor
 
 # Read the cloudformation/parameters.json file for the ProjectName and EnvionmentName.
 # Use these to name the CloudFormation stack.
@@ -37,3 +38,7 @@ delete-stack: _check-params _check-template
 describe-stack: _check-params _check-template
 	aws cloudformation describe-stacks \
 	  --stack-name $(STACK_NAME)
+
+build:
+	GOOS=linux GOARCH=amd64 go build $(BINARY).go
+	mv $(BINARY) bin/$(BINARY)
