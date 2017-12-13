@@ -15,13 +15,18 @@
     "UsePreviousValue": false
   },
   {
+    "ParameterKey": "TrustedExternalID",
+    "ParameterValue": "cur-access",
+    "UsePreviousValue": false
+  },
+  {
     "ParameterKey": "BillingBucketName",
-    "ParameterValue": "dliggat-billing",
+    "ParameterValue": "<enter_bucket_here>",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "ReportPath",
-    "ParameterValue": "/dliggat-billing",
+    "ParameterValue": "<enter_report_path_here>",
     "UsePreviousValue": false
   }
 ]

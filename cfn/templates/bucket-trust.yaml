@@ -15,6 +15,10 @@ Parameters:
     Type: String
     Description: The account ID to trust
 
+  TrustedExternalID:
+    Type: String
+    Description: The external ID for the assumeRole
+
   BillingBucketName:
     Type: String
     Description: The name of the bucket where CUR reports go (excluding the s3 prefix)
@@ -58,11 +62,16 @@ Resources:
             Action: "sts:AssumeRole"
             Principal:
               AWS: { Ref: TrustedAwsAccountId }
+            Condition:
+              StringEquals:
+                sts:ExternalId: { Ref: TrustedExternalID }
 
 
 Outputs:
   CrossAccountRoleName:
     Value: { Ref: CrossAccountRole }
+  ExternalID:
+    Value: { Ref: TrustedExternalID }
   CrossAccountRoleArn:
     Value:
       "Fn::GetAtt":
