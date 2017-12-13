@@ -33,6 +33,10 @@ Parameters:
 
   MessageRetentionPeriod:
     Type: Number
+  
+  TableSuffix:
+    Type: String
+    Description: Suffix for the DyanamoDB Table. Table Name will be <projectname>-<environemtname>-<tablesuffix>
 
 Conditions:
   HasSchedule:
@@ -176,6 +180,9 @@ Resources:
     Type: AWS::DynamoDB::Table
     DeletionPolicy: Retain
     Properties:
+      TableName: 
+        Fn::Sub:
+            "${ProjectName}-${EnvironmentName}-${TableSuffix}"
       AttributeDefinitions:
         - AttributeName: cur_report_descriptor
           AttributeType: S

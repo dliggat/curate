@@ -38,5 +38,10 @@
     "ParameterKey": "MessageRetentionPeriod",
     "ParameterValue": "86400",
     "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "TableSuffix",
+    "ParameterValue": "config",
+    "UsePreviousValue": false
   }
 ]
