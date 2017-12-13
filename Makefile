@@ -4,7 +4,7 @@
 # Use these to name the CloudFormation stack.
 PROJECT_NAME = $(shell cat cfn/parameters/$(PARAMS).json | python -c 'import sys, json; j = [i for i in json.load(sys.stdin) if i["ParameterKey"]=="ProjectName"][0]["ParameterValue"]; print j')
 ENVIRONMENT_NAME = $(shell cat cfn/parameters/$(PARAMS).json | python -c 'import sys, json; j = [i for i in json.load(sys.stdin) if i["ParameterKey"]=="EnvironmentName"][0]["ParameterValue"]; print j')
-STACK_NAME = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-stack
+STACK_NAME = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-$(TEMPLATE)-stack
 
 _check-params:
 ifndef PARAMS
@@ -30,10 +30,10 @@ update-stack: _check-params _check-template
 	  --parameters file://cfn/parameters/$(PARAMS).json \
 	  --capabilities CAPABILITY_IAM
 
-delete-stack: _check-params
+delete-stack: _check-params _check-template
 	aws cloudformation delete-stack \
 	  --stack-name $(STACK_NAME)
 
-describe-stack:
+describe-stack: _check-params _check-template
 	aws cloudformation describe-stacks \
 	  --stack-name $(STACK_NAME)

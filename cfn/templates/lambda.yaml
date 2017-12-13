@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
+Description: Configuration for curate - Lambda, DynamoDB, SQS
+
 Parameters:
   ProjectName:
     Type: String
@@ -68,7 +70,6 @@ Resources:
 
               def handler(event, context):
                   logger.info('Event: ' + json.dumps(event))
-
                   table = '${table}'
                   queue_url = '${queue_url}'
                   resource = boto3.resource('dynamodb')
