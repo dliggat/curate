@@ -1,0 +1,26 @@
+{
+  "cur_report_descriptor": {
+    "S": "customer_name"
+  },
+  "cur_database": {
+    "S": "YVR"
+  },
+  "source_bucket": {
+    "S": "customer_bucket"
+  },
+  "destination_bucket": {
+    "S": "curate-prod-cur"
+  },
+  "report_path": {
+    "S": "/path/to/report"
+  },
+  "report_name": {
+    "S": "name"
+  },
+  "source_role_arn": {
+    "S": ""
+  },
+  "source_external_id": {
+    "S": ""
+  }
+}

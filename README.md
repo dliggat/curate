@@ -13,3 +13,12 @@ Edit any relevant values in `cfn/parameters/lambda.json`, then:
 ```bash
 PARAMS=lambda TEMPLATE=lambda make create-stack
 ```
+
+
+### Add a CUR Report to the system
+
+A CUR report is added by adding an item to the prod DynamoDB table:
+
+```
+aws dynamodb put-item --table-name curate-prod-config --item file://add_report.json
+```
