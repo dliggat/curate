@@ -168,7 +168,7 @@ func processCUR(m Message, topLevelDestPath string) ([]curconvert.CurColumn, str
 	}
 
 	if err := cc.ConvertCur(); err != nil {
-		return nil, "", err
+		return nil, "", errors.New("Could not convert CUR: " + err.Error())
 	}
 
 	cols, err := cc.GetCURColumns()
@@ -237,7 +237,7 @@ func main() {
 				if err := json.Unmarshal([]byte(*message.Body), &m); err != nil {
 					doLog(logger, "Failed to decode message job: "+err.Error())
 				} else {
-					doLog(logger, "Starting processing of job, arn: "+m.SourceRoleArn+" on bucket: "+m.SourceBucket)
+					doLog(logger, "Starting processing of job, arn: "+m.CurReportDescriptor+" on bucket: "+m.SourceBucket)
 					columns, s3path, err := processCUR(m, topLevelDestPath)
 					if err != nil {
 						doLog(logger, "Failed to process CUR conversion, error: "+err.Error())
@@ -254,7 +254,7 @@ func main() {
 							if err != nil {
 								doLog(logger, "Failed to delete SQS message from queue, error: "+err.Error())
 							} else {
-								doLog(logger, "Completed processing of job, arn: "+m.SourceRoleArn+" on bucket: "+m.SourceBucket)
+								doLog(logger, "Completed processing of job, arn: "+m.CurReportDescriptor+" on bucket: "+m.SourceBucket)
 							}
 						}
 					}
