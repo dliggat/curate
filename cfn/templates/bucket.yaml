@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: S3 Bucket & any applicable lifecycle rules for curate
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name for this project; e.g. downtime-notifier, dynamodb-scaler
+
+  EnvironmentName:
+    Type: String
+    Description: Name for this environment; e.g. development, staging, production
+
+  BucketSuffix:
+    Type: String
+    Description: Prefix for the bucket to create. Final bucket name will be <projectname>-<environemtname>-<bucketsuffix>
+    Default: "curate"
+
+Resources:
+  CurateBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: 
+        Fn::Sub:
+          "${ProjectName}-${EnvironmentName}-${BucketSuffix}"
+      AccessControl: BucketOwnerFullControl
+Outputs:
+  Bucket:
+    Value: { Ref: CurateBucket }
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - bucket
+            - name
+  BucketArn:
+    Value:
+      "Fn::GetAtt": [CurateBucket, Arn]
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - bucket
+            - arn
