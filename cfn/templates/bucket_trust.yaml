@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: A role that grants readonly access to a bucket and trusts another account to assume
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name for this project; e.g. downtime-notifier, dynamodb-scaler
+
+  EnvironmentName:
+    Type: String
+    Description: Name for this environment; e.g. development, staging, production
+
+  TrustedAwsAccountId:
+    Type: String
+    Description: The account ID to trust
+
+  BillingBucketName:
+    Type: String
+    Description: The name of the bucket where CUR reports go (excluding the s3 prefix)
+
+  ReportPath:
+    Type: String
+    Description: The name of the report path for the Cost and Usage reportconfigured within the billing dashboard
+Resources:
+
+  CrossAccountRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Policies:
+        - PolicyName: permit-readonly-access-to-bucket
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "s3:ListBucket"
+                  - "s3:GetBucketLocation"
+                Effect: Allow
+                Resource:
+                  "Fn::Join":
+                    - ""
+                    - - "arn:aws:s3:::"
+                      - { Ref: BillingBucketName }
+              - Action:
+                - "s3:GetObject"
+                Effect: Allow
+                Resource:
+                  "Fn::Join":
+                    - ""
+                    - - "arn:aws:s3:::"
+                      - { Ref: BillingBucketName }
+                      - { Ref: ReportPath }
+                      - "/*"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Principal:
+              AWS: { Ref: TrustedAwsAccountId }
+
+
+Outputs:
+  CrossAccountRoleName:
+    Value: { Ref: CrossAccountRole }
+  CrossAccountRoleArn:
+    Value:
+      "Fn::GetAtt":
+        - CrossAccountRole
+        - Arn
+
+  SigninUrl:
+    Value:
+      "Fn::Join":
+        - ""
+        - - "https://signin.aws.amazon.com/switchrole?account="
+          - { Ref: "AWS::AccountId" }
+          - "&roleName="
+          - { Ref: CrossAccountRole }
