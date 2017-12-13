@@ -18,6 +18,9 @@ Parameters:
   SubnetAZ1ExportIdentifier:
     Type: String
 
+  GitRepo:
+    Type: String
+
   KeypairName:
     Type: AWS::EC2::KeyPair::KeyName
 
@@ -45,14 +48,93 @@ Resources:
                 - ec2.amazonaws.com
       Path: /
       Policies:
-        - PolicyName: GetObjects
+        - PolicyName: curate-permissions
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - "s3:GetObject"
-                Resource: "arn:aws:s3:::*/*"
+                  - "sqs:ChangeMessageVisibility"
+                  - "sqs:ChangeMessageVisibilityBatch"
+                  - "sqs:DeleteMessage"
+                  - "sqs:DeleteMessageBatch"
+                  - "sqs:ReceiveMessage"
+                Resource:
+                  "Fn::ImportValue":
+                    "Fn::Join":
+                      - "-"
+                      - - { Ref: ProjectName }
+                        - { Ref: EnvironmentName }
+                        - queue
+                        - arn
+              - Effect: Allow
+                Action:
+                  - athena:GetQueryExecution
+                  - athena:GetQueryResults
+                  - athena:RunQuery
+                  - athena:StartQueryExecution
+                  - glue:CreateDatabase
+                  - glue:CreateTable
+                  - glue:GetDatabase
+                  - glue:GetTable
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:ListMultipartUploadParts
+                  - s3:AbortMultipartUpload
+                  - s3:CreateBucket
+                  - s3:PutObject
+                Resource:
+                  - "arn:aws:s3:::aws-athena-query-results-*"
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:ListObjects
+                  - s3:PutObject
+                Resource:
+                  - "Fn::ImportValue":
+                      "Fn::Join":
+                        - "-"
+                        - - { Ref: ProjectName }
+                          - { Ref: EnvironmentName }
+                          - bucket
+                          - arn
+                  - "Fn::Join":
+                    - ""
+                    - - "Fn::ImportValue":
+                          "Fn::Join":
+                            - "-"
+                            - - { Ref: ProjectName }
+                              - { Ref: EnvironmentName }
+                              - bucket
+                              - arn
+                      - "/*"
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                Resource:
+                  - "Fn::Join":
+                    - ""
+                    - - "arn:aws:logs:"
+                      - { Ref: "AWS::Region" }
+                      - ":"
+                      - { Ref: "AWS::AccountId" }
+                      - ":log-group:curate:*"
 
   IamProfile:
     Type: AWS::IAM::InstanceProfile
@@ -101,12 +183,24 @@ Resources:
         - { Ref: SecurityGroup }
       UserData:
         "Fn::Base64":
-          "Fn::Join":
-            - "\n"
-            - - "#!/bin/bash"
-              - ""
-              - "yum update -y"
-              - "yum install -y git sl gcc mysql postgresql95-devel telnet"
+          "Fn::Sub":
+            - |-
+              #!/bin/bash
+              yum update -y
+              yum install -y git sl gcc mysql
+              git clone ${git_repo} repo
+              cd repo
+              echo ./bin/processor --sqs-queue ${sqs_queue}
+            - git_repo: { Ref: GitRepo }
+              sqs_queue:
+                "Fn::ImportValue":
+                  "Fn::Join":
+                    - "-"
+                    - - { Ref: ProjectName }
+                      - { Ref: EnvironmentName }
+                      - queue
+                      - url
+
 
   Asg:
     Type: AWS::AutoScaling::AutoScalingGroup

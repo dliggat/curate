@@ -204,14 +204,14 @@ func main() {
 	var logger *cwlogger.Logger
 	if ec2 { // Init Cloudwatch Logger class if were running on EC2
 		logger, err := cwlogger.New(&cwlogger.Config{
-			LogGroupName: "CURprocessor",
+			LogGroupName: "curate",
 			Client:       cloudwatchlogs.New(sess),
 		})
 		if err != nil {
 			log.Fatal("Could not initalize Cloudwatch logger: " + err.Error())
 		}
 		defer logger.Close()
-		logger.Log(time.Now(), "CURprocessor running on "+meta["instanceId"].(string)+" in "+meta["availabilityZone"].(string))
+		logger.Log(time.Now(), "curate running on "+meta["instanceId"].(string)+" in "+meta["availabilityZone"].(string))
 	}
 
 	// create sqs handler

@@ -1,0 +1,47 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "prod",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "VpcExportIdentifier",
+    "ParameterValue": "curate-prod-VpcId",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SubnetAZ0ExportIdentifier",
+    "ParameterValue": "curate-prod-PublicSubnetAZ0",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SubnetAZ1ExportIdentifier",
+    "ParameterValue": "curate-prod-PublicSubnetAZ1",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "GitRepo",
+    "ParameterValue": "https://github.com/dliggat/curate.git",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "KeypairName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AmiId",
+    "ParameterValue": "ami-55ef662f",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "c5.large",
+    "UsePreviousValue": false
+  }
+]
