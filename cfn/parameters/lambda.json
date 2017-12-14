@@ -11,7 +11,7 @@
   },
   {
     "ParameterKey": "ScheduleExpression",
-    "ParameterValue": "",
+    "ParameterValue": "rate(6 hours)",
     "UsePreviousValue": false
   },
   {

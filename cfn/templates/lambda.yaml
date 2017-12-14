@@ -33,7 +33,7 @@ Parameters:
 
   MessageRetentionPeriod:
     Type: Number
-  
+
   TableSuffix:
     Type: String
     Description: Suffix for the DyanamoDB Table. Table Name will be <projectname>-<environemtname>-<tablesuffix>
@@ -49,6 +49,17 @@ Resources:
   Queue:
     Type: "AWS::SQS::Queue"
     Properties:
+      MessageRetentionPeriod: { Ref: MessageRetentionPeriod }
+      VisibilityTimeout: { Ref: VisibilityTimeout }
+      RedrivePolicy:
+        deadLetterTargetArn:
+          "Fn::GetAtt": [DeadLetterQueue, Arn]
+        maxReceiveCount: 1
+
+  DeadLetterQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      QueueName: DeadLetterQueue
       MessageRetentionPeriod: { Ref: MessageRetentionPeriod }
       VisibilityTimeout: { Ref: VisibilityTimeout }
 
@@ -180,7 +191,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     DeletionPolicy: Retain
     Properties:
-      TableName: 
+      TableName:
         Fn::Sub:
             "${ProjectName}-${EnvironmentName}-${TableSuffix}"
       AttributeDefinitions:
