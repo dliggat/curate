@@ -199,6 +199,9 @@ func main() {
 
 	meta := getInstanceMetadata(sess)
 
+	// re-init session now we have the region we are in
+	sess = sess.Copy(&aws.Config{Region: aws.String(meta["region"].(string))})
+
 	// Check if running on EC2
 	_, ec2 := meta["instanceId"].(string)
 	var logger *cwlogger.Logger
