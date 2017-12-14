@@ -29,8 +29,11 @@ func getInstanceMetadata(sess *session.Session) map[string]interface{} {
 	if err == nil {
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			_ = json.Unmarshal(body, &m)
+		if err == nil {
+			err = json.Unmarshal(body, &m)
+			if err != nil {
+				log.Fatalln("Could not parse MetaData, erorr: " + err.Error())
+			}
 		}
 	}
 	// if we havent obtained instance meta-data fetch account from STS - likely were not on EC2
