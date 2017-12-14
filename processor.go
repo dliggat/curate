@@ -209,7 +209,8 @@ func main() {
 	_, ec2 := meta["instanceId"].(string)
 	var logger *cwlogger.Logger
 	if ec2 { // Init Cloudwatch Logger class if were running on EC2
-		logger, err := cwlogger.New(&cwlogger.Config{
+		var err error
+		logger, err = cwlogger.New(&cwlogger.Config{
 			LogGroupName: "curate",
 			Client:       cloudwatchlogs.New(sess),
 		})
@@ -217,7 +218,7 @@ func main() {
 			log.Fatal("Could not initalize Cloudwatch logger: " + err.Error())
 		}
 		defer logger.Close()
-		logger.Log(time.Now(), "curate running on "+meta["instanceId"].(string)+" in "+meta["availabilityZone"].(string))
+		doLog(logger, "curate running on "+meta["instanceId"].(string)+" in "+meta["availabilityZone"].(string))
 	}
 
 	// create sqs handler
@@ -243,7 +244,7 @@ func main() {
 				if err := json.Unmarshal([]byte(*message.Body), &m); err != nil {
 					doLog(logger, "Failed to decode message job: "+err.Error())
 				} else {
-					doLog(logger, "Starting processing of job, arn: "+m.CurReportDescriptor+" on bucket: "+m.SourceBucket)
+					doLog(logger, "Starting processing of job, report: "+m.CurReportDescriptor+", bucket: "+m.SourceBucket)
 					columns, s3path, err := processCUR(m, topLevelDestPath)
 					if err != nil {
 						doLog(logger, "Failed to process CUR conversion, error: "+err.Error())
@@ -260,7 +261,7 @@ func main() {
 							if err != nil {
 								doLog(logger, "Failed to delete SQS message from queue, error: "+err.Error())
 							} else {
-								doLog(logger, "Completed processing of job, arn: "+m.CurReportDescriptor+" on bucket: "+m.SourceBucket)
+								doLog(logger, "Completed processing of job, report: "+m.CurReportDescriptor+", bucket: "+m.SourceBucket)
 							}
 						}
 					}
