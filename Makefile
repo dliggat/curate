@@ -1,4 +1,4 @@
-.PHONY: _check-params _check-template create-stack update-stack delete-stack describe-stack build
+.PHONY: _check-params _check-template create-stack update-stack delete-stack describe-stack build put-ddb
 BINARY = processor
 
 # Read the cloudformation/parameters.json file for the ProjectName and EnvionmentName.
@@ -42,3 +42,6 @@ describe-stack: _check-params _check-template
 build:
 	GOOS=linux GOARCH=amd64 go build $(BINARY).go
 	mv $(BINARY) bin/$(BINARY)
+
+put-ddb:
+	aws dynamodb put-item --table-name curate-prod-config --item file://data/$(DATA).json

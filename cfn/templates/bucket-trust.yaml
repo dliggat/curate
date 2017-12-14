@@ -53,6 +53,7 @@ Resources:
                     - ""
                     - - "arn:aws:s3:::"
                       - { Ref: BillingBucketName }
+                      - "/"
                       - { Ref: ReportPath }
                       - "/*"
       AssumeRolePolicyDocument:

@@ -20,5 +20,5 @@ PARAMS=lambda TEMPLATE=lambda make create-stack
 A CUR report is added by adding an item to the prod DynamoDB table:
 
 ```
-aws dynamodb put-item --table-name curate-prod-config --item file://add_report.json
+aws dynamodb put-item --table-name curate-prod-config --item file://data/example.json
 ```

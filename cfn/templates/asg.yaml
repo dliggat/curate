@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
+Description: ASG to process CUR report entries
+
 Parameters:
   ProjectName:
     Type: String
@@ -219,7 +221,7 @@ Resources:
               - - { Ref: ProjectName }
                 - { Ref: EnvironmentName }
                 - "asg"
-                - "instance"
+                - "worker"
           PropagateAtLaunch: true
 
       MinSize: 1

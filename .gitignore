@@ -29,3 +29,6 @@ src/github.com
 src/gopkg.in.*
 src/golang.org
 src/gopkg.in
+
+data/*.json
+!data/example.json

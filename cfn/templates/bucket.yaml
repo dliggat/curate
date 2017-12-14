@@ -21,7 +21,7 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
     Properties:
-      BucketName: 
+      BucketName:
         Fn::Sub:
           "${ProjectName}-${EnvironmentName}-${BucketSuffix}"
       AccessControl: BucketOwnerFullControl
