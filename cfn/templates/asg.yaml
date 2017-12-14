@@ -54,6 +54,10 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                  - "sts:AssumeRole"
+                Resource: "*"
+              - Effect: Allow
+                Action:
                   - "sqs:ChangeMessageVisibility"
                   - "sqs:ChangeMessageVisibilityBatch"
                   - "sqs:DeleteMessage"
