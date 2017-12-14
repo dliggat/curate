@@ -47,6 +47,8 @@ Resources:
               Service:
                 - ec2.amazonaws.com
       Path: /
+      # ManagedPolicyArns:
+      #   - arn:aws:iam::aws:policy/AdministratorAccess
       Policies:
         - PolicyName: curate-permissions
           PolicyDocument:
@@ -194,7 +196,7 @@ Resources:
               yum install -y git sl gcc mysql
               git clone ${git_repo} repo
               cd repo
-              echo ./bin/processor --sqs-queue ${sqs_queue}
+              ./bin/processor --sqsqueue ${sqs_queue}
             - git_repo: { Ref: GitRepo }
               sqs_queue:
                 "Fn::ImportValue":
