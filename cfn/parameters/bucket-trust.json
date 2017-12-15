@@ -1,15 +1,5 @@
 [
   {
-    "ParameterKey": "ProjectName",
-    "ParameterValue": "DelegateTrustBillingBucket",
-    "UsePreviousValue": false
-  },
-  {
-    "ParameterKey": "EnvironmentName",
-    "ParameterValue": "env",
-    "UsePreviousValue": false
-  },
-  {
     "ParameterKey": "TrustedAwsAccountId",
     "ParameterValue": "127476143006",
     "UsePreviousValue": false

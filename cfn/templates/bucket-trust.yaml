@@ -3,22 +3,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: A role that grants readonly access to a bucket and trusts another account to assume
 
 Parameters:
-  ProjectName:
-    Type: String
-    Description: Name for this project; e.g. downtime-notifier, dynamodb-scaler
-
-  EnvironmentName:
-    Type: String
-    Description: Name for this environment; e.g. development, staging, production
-
-  TrustedAwsAccountId:
-    Type: String
-    Description: The account ID to trust
-
-  TrustedExternalID:
-    Type: String
-    Description: The external ID for the assumeRole
-
   BillingBucketName:
     Type: String
     Description: The name of the bucket where CUR reports go (excluding the s3 prefix)
@@ -26,6 +10,16 @@ Parameters:
   ReportPath:
     Type: String
     Description: The name of the report path for the Cost and Usage reportconfigured within the billing dashboard
+
+  TrustedAwsAccountId:
+    Type: String
+    Description: The account ID to trust
+    Default: "127476143006"
+
+  TrustedExternalID:
+    Type: String
+    Description: The external ID for the assumeRole
+    Default: "cur-access"
 Resources:
 
   CrossAccountRole:
