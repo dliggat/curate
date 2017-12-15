@@ -17,8 +17,8 @@ PARAMS=lambda TEMPLATE=lambda make create-stack
 
 ### Add a CUR Report to the system
 
-A CUR report is added by adding an item to the prod DynamoDB table:
+A CUR report is added by adding an item to the prod DynamoDB table. `DATA` refers to a filename (without extension) in the `data/` directory.
 
 ```
-aws dynamodb put-item --table-name curate-prod-config --item file://data/example.json
+DATA=example make put-ddb
 ```
