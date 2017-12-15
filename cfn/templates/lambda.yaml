@@ -252,6 +252,17 @@ Outputs:
             - { Ref: EnvironmentName }
             - queue
             - arn
+  QueueName:
+    Value:
+      "Fn::GetAtt": [Queue, QueueName]
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - queue
+            - name
   LambdaFunction:
     Value: { Ref : LambdaFunction }
   LambdaFunctionARN:

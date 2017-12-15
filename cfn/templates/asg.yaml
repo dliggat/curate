@@ -37,6 +37,53 @@ Parameters:
     Type: String
     Description: The Maximum price for the instance you want to pay (Note you will be charged based on the current price)
 
+  AsgMinSize:
+    Default: 0
+    Description: Minimum number of instances in the ASG.
+    Type: Number
+    MinValue: 0
+
+  AsgMaxSize:
+    Default: 10
+    Description: Maximum number of instances in the ASG.
+    Type: Number
+    MinValue: 0
+    MaxValue: 20
+
+  AsgEvaluationPeriods:
+    Default: 1
+    Description: Evaluation periods for scale-out / scale-in actions
+    Type: Number
+    MinValue: 1
+
+  AsgEvaluationPeriodDuration:
+    Default: 60
+    Description: Evaluation period duration (secs) for scale-out / scale-in actions
+    Type: Number
+    MinValue: 60
+
+  AsgCooldown:
+    Default: 300
+    Description: Scaling policy cooldown duration (secs)
+    Type: Number
+    MinValue: 60
+
+  AsgScaleOutThreshold:
+    Default: 1
+    Description: Queue depth threshold for scale-out
+    Type: Number
+    MinValue: 1
+
+  AsgScaleInThreshold:
+    Default: 1
+    Description: Queue depth threshold for scale-in
+    Type: Number
+
+  AsgScaleInAdjustment:
+    Default: -1
+    Description: Queue depth threshold for scale-out
+    Type: Number
+
 
 Resources:
   IamRole:
@@ -229,12 +276,86 @@ Resources:
                 - "worker"
           PropagateAtLaunch: true
 
-      MinSize: 1
-      MaxSize: 1
+      MinSize: { Ref: AsgMinSize }
+      MaxSize: { Ref: AsgMaxSize }
       LaunchConfigurationName: { Ref: LaunchConfig }
       VPCZoneIdentifier:
         - "Fn::ImportValue": { Ref: SubnetAZ0ExportIdentifier }
         - "Fn::ImportValue": { Ref: SubnetAZ1ExportIdentifier }
+
+  ScaleOutPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      PolicyType: StepScaling
+      AutoScalingGroupName: { Ref: Asg }
+      StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          MetricIntervalUpperBound: 9
+          ScalingAdjustment: 1
+        - MetricIntervalLowerBound: 9
+          MetricIntervalUpperBound: 19
+          ScalingAdjustment: 2
+        - MetricIntervalLowerBound: 19
+          ScalingAdjustment: 3
+
+  ScaleOutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: { Ref: AsgEvaluationPeriods }
+      Statistic: Average
+      Threshold: { Ref: AsgScaleOutThreshold }
+      AlarmDescription: Alarm if SQS queue depth is above threshold
+      Period: { Ref: AsgEvaluationPeriodDuration }
+      AlarmActions:
+        - { Ref: ScaleOutPolicy }
+      Namespace: AWS/SQS
+      Dimensions:
+        - Name: QueueName
+          Value:
+            "Fn::ImportValue":
+              "Fn::Join":
+                - "-"
+                - - { Ref: ProjectName }
+                  - { Ref: EnvironmentName }
+                  - queue
+                  - name
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      MetricName: ApproximateNumberOfMessagesVisible
+
+  ScaleInPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      PolicyType: SimpleScaling
+      AutoScalingGroupName: { Ref: Asg }
+      ScalingAdjustment: { Ref: AsgScaleInAdjustment }
+      Cooldown: { Ref: AsgCooldown }
+
+  ScaleInAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: { Ref: AsgEvaluationPeriods }
+      Statistic: Average
+      Threshold: { Ref: AsgScaleInThreshold }
+      AlarmDescription: Alarm if SQS queue depth is below threshold
+      Period: { Ref: AsgEvaluationPeriodDuration }
+      AlarmActions:
+        - { Ref: ScaleInPolicy }
+      Namespace: AWS/SQS
+      Dimensions:
+        - Name: QueueName
+          Value:
+            "Fn::ImportValue":
+              "Fn::Join":
+                - "-"
+                - - { Ref: ProjectName }
+                  - { Ref: EnvironmentName }
+                  - queue
+                  - name
+      ComparisonOperator: LessThanThreshold
+      MetricName: ApproximateNumberOfMessagesVisible
+
 
 Outputs:
   SgIdExport:
