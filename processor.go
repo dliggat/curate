@@ -109,10 +109,6 @@ func sendQuery(svc *athena.Athena, db string, sql string, account string, region
 }
 
 func createAthenaTable(sess *session.Session, tableprefix string, database string, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}) error {
-	if len(database) < 1 {
-		database = "cur"
-	}
-
 	svcAthena := athena.New(sess)
 
 	sql := "CREATE DATABASE IF NOT EXISTS `" + database + "`"
@@ -160,7 +156,7 @@ func processCUR(m Message, topLevelDestPath string) ([]curconvert.CurColumn, str
 	end := start.AddDate(0, 1, 0)
 	curDate := start.Format("200601") + "01-" + end.Format("200601") + "01"
 	manifest := m.ReportPath + "/" + curDate + "/" + m.ReportName + "-Manifest.json"
-	destPath := topLevelDestPath + "/" + m.CurReportDescriptor + "/" + start.Format("200601")
+	destPath := topLevelDestPath + "/" + m.CurDatabase + "/" + m.CurReportDescriptor + "/" + start.Format("200601")
 
 	cc := curconvert.NewCurConvert(m.SourceBucket, manifest, m.DestinationBucket, destPath)
 	if len(m.SourceRoleArn) > 1 {
@@ -245,6 +241,11 @@ func main() {
 					doLog(logger, "Failed to decode message job: "+err.Error())
 				} else {
 					doLog(logger, "Starting processing of job, report: "+m.CurReportDescriptor+", bucket: "+m.SourceBucket)
+
+					if len(m.CurDatabase) < 1 {
+						m.CurDatabase = "cur"
+					}
+
 					columns, s3path, err := processCUR(m, topLevelDestPath)
 					if err != nil {
 						doLog(logger, "Failed to process CUR conversion, error: "+err.Error())
