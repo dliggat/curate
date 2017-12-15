@@ -33,6 +33,10 @@ Parameters:
     Type: String
     Description: The size of the instance
 
+  SpotPrice:
+    Type: String
+    Description: The Maximum price for the instance you want to pay (Note you will be charged based on the current price)
+
 
 Resources:
   IamRole:
@@ -187,6 +191,7 @@ Resources:
       KeyName: { Ref: KeypairName }
       IamInstanceProfile: { Ref: IamProfile }
       InstanceType: { Ref: InstanceType }
+      SpotPrice: { Ref: SpotPrice }
       SecurityGroups:
         - { Ref: SecurityGroup }
       UserData:

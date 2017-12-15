@@ -43,5 +43,10 @@
     "ParameterKey": "InstanceType",
     "ParameterValue": "c5.large",
     "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SpotPrice",
+    "ParameterValue": "0.096",
+    "UsePreviousValue": false
   }
 ]
