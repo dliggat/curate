@@ -20,8 +20,8 @@ Parameters:
     Type: String
     Description: The external ID for the assumeRole
     Default: "cur-access"
-Resources:
 
+Resources:
   CrossAccountRole:
     Type: AWS::IAM::Role
     Properties:
