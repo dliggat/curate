@@ -41,7 +41,7 @@
   },
   {
     "ParameterKey": "InstanceType",
-    "ParameterValue": "c5.large",
+    "ParameterValue": "c5.2xlarge",
     "UsePreviousValue": false
   },
   {
