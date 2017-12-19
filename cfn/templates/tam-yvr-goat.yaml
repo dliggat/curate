@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: A role that grants access to Athena for TAM's to query tables in there groups database
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name for this project; e.g. downtime-notifier, dynamodb-scaler
+
+  EnvironmentName:
+    Type: String
+    Description: Name for this environment; e.g. development, staging, production
+
+  DatabaseName:
+    Type: String
+    Description: The name of the database which the team belongs to
+
+Resources:
+  CrossAccountRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Policies:
+        - PolicyName: "tam_access"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - athena:GetCatalogs
+                  - athena:GetNamespaces
+                  - athena:GetTables
+                  - athena:GetTable
+                  - athena:GetQueryExecution
+                  - athena:GetQueryResults
+                  - athena:RunQuery
+                  - athena:StartQueryExecution
+                  - athena:ListQueryExecutions
+                  - athena:BatchGetQueryExecution
+                  - athena:ListNamedQueries
+                  - athena:CreateNamedQuery
+                  - athena:BatchGetNamedQuery
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - glue:GetDatabase
+                  - glue:GetDatabases
+                  - glue:GetTable
+                  - glue:GetTables
+                  - glue:GetPartition
+                  - glue:GetPartitions
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:ListMultipartUploadParts
+                  - s3:AbortMultipartUpload
+                  - s3:PutObject
+                Resource:
+                  "Fn::Join":
+                    - ""
+                    - - "arn:aws:s3:::aws-athena-query-results-"
+                      - Ref: "AWS::AccountId"
+                      - "-"
+                      - Ref: "AWS::Region"
+                      - "/"
+                      - Ref: DatabaseName
+                      - "/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:ListObjects
+                Resource:
+                  - "Fn::ImportValue":
+                      "Fn::Join":
+                        - "-"
+                        - - { Ref: ProjectName }
+                          - { Ref: EnvironmentName }
+                          - bucket
+                          - arn
+                  - "Fn::Join":
+                    - ""
+                    - - "Fn::ImportValue":
+                          "Fn::Join":
+                            - "-"
+                            - - { Ref: ProjectName }
+                              - { Ref: EnvironmentName }
+                              - bucket
+                              - arn
+                      - "/parquet-cur/"
+                      - Ref: DatabaseName
+                      - "/*"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRole"
+            Principal:
+              AWS: 
+                - "433468561249"
+
+
+Outputs:
+  CrossAccountRoleName:
+    Value: { Ref: CrossAccountRole }
+  CrossAccountRoleArn:
+    Value:
+      "Fn::GetAtt":
+        - CrossAccountRole
+        - Arn
+
+  SigninUrl:
+    Value:
+      "Fn::Join":
+        - ""
+        - - "https://signin.aws.amazon.com/switchrole?account="
+          - { Ref: "AWS::AccountId" }
+          - "&roleName="
+          - { Ref: CrossAccountRole }
