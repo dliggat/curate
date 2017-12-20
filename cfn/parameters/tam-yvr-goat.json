@@ -13,5 +13,10 @@
     "ParameterKey": "DatabaseName",
     "ParameterValue": "yvr_goat",
     "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AWSAccounts",
+    "ParameterValue": "433468561249,268368477672",
+    "UsePreviousValue": false
   }
 ]

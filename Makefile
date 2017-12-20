@@ -5,7 +5,11 @@ BINARY = processor
 # Use these to name the CloudFormation stack.
 PROJECT_NAME = $(shell cat cfn/parameters/$(PARAMS).json | python -c 'import sys, json; j = [i for i in json.load(sys.stdin) if i["ParameterKey"]=="ProjectName"][0]["ParameterValue"]; print j')
 ENVIRONMENT_NAME = $(shell cat cfn/parameters/$(PARAMS).json | python -c 'import sys, json; j = [i for i in json.load(sys.stdin) if i["ParameterKey"]=="EnvironmentName"][0]["ParameterValue"]; print j')
-STACK_NAME = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-$(TEMPLATE)-stack
+ifdef SUFFIX
+	STACK_NAME = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-$(TEMPLATE)-$(SUFFIX)-stack
+else
+	STACK_NAME = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-$(TEMPLATE)-stack
+endif
 
 _check-params:
 ifndef PARAMS
