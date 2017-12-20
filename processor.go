@@ -77,7 +77,7 @@ func sendQuery(svc *athena.Athena, db string, sql string, account string, region
 	s.SetQueryExecutionContext(&q)
 
 	var r athena.ResultConfiguration
-	r.SetOutputLocation("s3://aws-athena-query-results-" + account + "-" + region + "/")
+	r.SetOutputLocation("s3://aws-athena-query-results-" + account + "-" + region + "/feedprocessor/")
 	s.SetResultConfiguration(&r)
 
 	result, err := svc.StartQueryExecution(&s)
