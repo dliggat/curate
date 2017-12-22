@@ -110,6 +110,9 @@ Resources:
       Handler: index.handler
       Runtime: { Ref: Runtime }
       MemorySize: { Ref: MemorySize }
+      DeadLetterConfig:
+        TargetArn:
+          "Fn::GetAtt": [DeadLetterQueue, Arn]
       Environment:
         Variables:
           EnvironmentName: { Ref: EnvironmentName }
@@ -186,6 +189,11 @@ Resources:
                   - "sqs:SendMessage"
                 Resource:
                   "Fn::GetAtt": [Queue, Arn]
+              - Effect: Allow
+                Action:
+                  - "sqs:SendMessage"
+                Resource:
+                  "Fn::GetAtt": [DeadLetterQueue, Arn]
 
   ResultTable:
     Type: AWS::DynamoDB::Table
@@ -215,6 +223,30 @@ Resources:
       FunctionName: { "Fn::GetAtt": [ LambdaFunction, Arn ] }
       Principal: events.amazonaws.com
 
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName:
+        Fn::Sub:
+          "${ProjectName}-${EnvironmentName}-Alert-Topic"
+
+  DLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: 1
+      Statistic: Average
+      Threshold: 1
+      AlarmDescription: Alarm if DLQ contains items
+      Period: 60
+      AlarmActions:
+        - { Ref: AlertTopic }
+      Namespace: AWS/SQS
+      Dimensions:
+        - Name: QueueName
+          Value:
+            "Fn::GetAtt": [DeadLetterQueue, QueueName]
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      MetricName: ApproximateNumberOfMessagesVisible
 
   # The cron rule for the execution.
   ScheduledRule:
