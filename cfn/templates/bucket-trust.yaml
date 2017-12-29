@@ -3,7 +3,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: A role that grants readonly access to a bucket and trusts another account to assume
 
 Parameters:
-  BillingBucketName:
+  BucketName:
     Type: String
     Description: The name of the bucket where CUR reports go (excluding the s3 prefix)
 
@@ -38,7 +38,7 @@ Resources:
                   "Fn::Join":
                     - ""
                     - - "arn:aws:s3:::"
-                      - { Ref: BillingBucketName }
+                      - { Ref: BucketName }
               - Action:
                 - "s3:GetObject"
                 Effect: Allow
@@ -46,7 +46,7 @@ Resources:
                   "Fn::Join":
                     - ""
                     - - "arn:aws:s3:::"
-                      - { Ref: BillingBucketName }
+                      - { Ref: BucketName }
                       - "/"
                       - { Ref: ReportPath }
                       - "/*"
