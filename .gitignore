@@ -32,3 +32,5 @@ src/gopkg.in
 
 data/*.json
 !data/example.json
+
+help/onboarding/public/*

@@ -1,0 +1,42 @@
+# Site settings
+baseURL = "http://example.org/"
+languageCode = "en-us"
+title = "AWS TAM CUR onboarding"
+theme = "hugo-simpledoc-theme"
+
+[blackfriday]
+  angledQuotes = true
+  fractions = false
+  plainIDAnchors = true
+  smartlists = true
+  extensions = ["hardLineBreak"]
+
+# Top menu
+# [[menu.top]]
+#     name = "hugo-simpledoc-theme GitHub Repository"
+#     weight = 20
+#     url = "https://github.com/aerohub/hugo-simpledoc-theme"
+# [[menu.top]]
+#     name = "Hugo - A Fast and Flexible Website Generator"
+#     weight = 10
+#     url = "http://gohugo.io/"
+# [[menu.top]]
+#     name = "Original WPThemeDoc by Rich Tabor"
+#     weight = 30
+#     url = "https://github.com/richtabor/WPThemeDoc"
+
+# Site parameters
+[params]
+    # Meta
+    description = "hugo-simpledoc-theme - clean and convenient documentation theme for Hugo website generator"
+    author = "Pavel Kanyshev"
+    keywords = "hugo, documentation, hugo theme, hugo simple documentation theme"
+
+    # Header
+    # If not set, site title and meta description will be shown.
+    # You may use markdown here
+    headerTitle = "AWS TAM CUR Onboarding"
+    headerDescription = "Information & guide on setting up cross-account AWS Customer Usage Records access for your TAM to access. \n\nIf you have any questions after reading the below please reach out to your AWS TAM representative who will be able to get clarification on any concerns/questions."
+
+    # Back-to-top button name
+    bttButton = ""
