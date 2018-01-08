@@ -13,4 +13,4 @@ The AWS TAM community have setup automatic processing of CUR reports so that TAM
 
 The tool requires read only access to the S3 bucket that contains your CUR reports. Periodically these report files are downloaded, processed, and then made available to your TAMs for querying. For access, the tool needs a IAM role to assume in your AWS account; this role has extremely limited privileges and can only access the CUR reports within the specified S3 bucket - access to any other objects in the specified bucket or any other bucket is not granted.
 
-To help set up the required role [a Cloudformation template is provided](https://s3.amazonaws.com/aws-tam-cur-setup/customer-bucket-trust.yaml). This guide provides a walk through on spinning up a Cloudformation stack based on this template.
+To help set up the required role [a CloudFormation template is provided](https://s3.amazonaws.com/aws-tam-cur-setup/customer-bucket-trust.yaml). This guide provides a walk through on spinning up a CloudFormation stack based on this template.
