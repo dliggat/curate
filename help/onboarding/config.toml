@@ -29,14 +29,14 @@ theme = "hugo-simpledoc-theme"
 [params]
     # Meta
     description = "hugo-simpledoc-theme - clean and convenient documentation theme for Hugo website generator"
-    author = "Pavel Kanyshev"
-    keywords = "hugo, documentation, hugo theme, hugo simple documentation theme"
+    author = "Andy Fase"
+    keywords = "aws tam cur billing"
 
     # Header
     # If not set, site title and meta description will be shown.
     # You may use markdown here
     headerTitle = "AWS TAM CUR Onboarding"
-    headerDescription = "Information & guide on setting up cross-account AWS Customer Usage Records access for your TAM to access. \n\nIf you have any questions after reading the below please reach out to your AWS TAM representative who will be able to get clarification on any concerns/questions."
+    headerDescription = "Information & guide on setting up cross-account AWS Customer Usage Records access for your TAM to access. \n\nIf you have any questions after reading the below please reach out to your AWS TAM who will be able to get clarification on any concerns/questions."
 
     # Back-to-top button name
     bttButton = ""
