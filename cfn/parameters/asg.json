@@ -48,5 +48,15 @@
     "ParameterKey": "SpotPrice",
     "ParameterValue": "0.34",
     "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AsgCooldown",
+    "ParameterValue": "30",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AsgWarmup",
+    "ParameterValue": "15",
+    "UsePreviousValue": false
   }
 ]
