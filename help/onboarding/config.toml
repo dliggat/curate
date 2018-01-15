@@ -28,7 +28,7 @@ theme = "hugo-simpledoc-theme"
 # Site parameters
 [params]
     # Meta
-    description = "hugo-simpledoc-theme - clean and convenient documentation theme for Hugo website generator"
+    description = "Instructions for onboarding CUR data for analysis by AWS TAMs."
     author = "Andy Fase"
     keywords = "aws tam cur billing"
 
