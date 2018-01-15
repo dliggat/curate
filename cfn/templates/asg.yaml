@@ -66,7 +66,13 @@ Parameters:
     Default: 300
     Description: Scaling policy cooldown duration (secs)
     Type: Number
-    MinValue: 60
+    MinValue: 10
+
+  AsgWarmup:
+    Default: 300
+    Description: Steped Scaling policy warmup duration (secs)
+    Type: Number
+    MinValue: 10
 
   AsgScaleOutThreshold:
     Default: 1
@@ -280,6 +286,7 @@ Resources:
       AdjustmentType: ChangeInCapacity
       PolicyType: StepScaling
       AutoScalingGroupName: { Ref: Asg }
+      EstimatedInstanceWarmup: { Ref: AsgWarmup }
       StepAdjustments:
         - MetricIntervalLowerBound: 0
           MetricIntervalUpperBound: 9
