@@ -33,6 +33,9 @@ Parameters:
 
   MessageRetentionPeriod:
     Type: Number
+  
+  MessageRedriveCount:
+    Type: Number
 
   TableSuffix:
     Type: String
@@ -54,7 +57,7 @@ Resources:
       RedrivePolicy:
         deadLetterTargetArn:
           "Fn::GetAtt": [DeadLetterQueue, Arn]
-        maxReceiveCount: 1
+        maxReceiveCount: { Ref: MessageRedriveCount }
 
   DeadLetterQueue:
     Type: "AWS::SQS::Queue"

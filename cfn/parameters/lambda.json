@@ -40,6 +40,11 @@
     "UsePreviousValue": false
   },
   {
+    "ParameterKey": "MessageRedriveCount",
+    "ParameterValue": "3",
+    "UsePreviousValue": false
+  },
+  {
     "ParameterKey": "TableSuffix",
     "ParameterValue": "config",
     "UsePreviousValue": false
