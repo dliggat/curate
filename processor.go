@@ -155,7 +155,7 @@ func processCUR(m Message, topLevelDestPath string) ([]curconvert.CurColumn, str
 
 	start := time.Now()
 	end := start.AddDate(0, 1, 0)
-	curDate := start.Format("200601") + "01-" + end.Format("2006") + fmt.Sprintf("%2d", start.Month()+1) + "01"
+	curDate := start.Format("200601") + "01-" + end.Format("2006") + fmt.Sprintf("%02d", start.Month()+1) + "01"
 	manifest := m.ReportPath + "/" + curDate + "/" + m.ReportName + "-Manifest.json"
 	destPath := topLevelDestPath + "/" + m.CurDatabase + "/" + m.CurReportDescriptor + "/" + start.Format("200601")
 
