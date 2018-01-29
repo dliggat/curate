@@ -56,7 +56,7 @@
   },
   {
     "ParameterKey": "AsgWarmup",
-    "ParameterValue": "15",
+    "ParameterValue": "360",
     "UsePreviousValue": false
   }
 ]
