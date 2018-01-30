@@ -38,6 +38,7 @@ Resources:
                   - athena:GetQueryResults
                   - athena:RunQuery
                   - athena:StartQueryExecution
+                  - athena:StopQueryExecution
                   - athena:ListQueryExecutions
                   - athena:BatchGetQueryExecution
                   - athena:ListNamedQueries
