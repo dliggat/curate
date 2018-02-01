@@ -109,7 +109,7 @@ func sendQuery(svc *athena.Athena, db string, sql string, account string, region
 	return nil
 }
 
-func createAthenaTable(sess *session.Session, tableprefix string, database string, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}) error {
+func createAthenaTable(sess *session.Session, tableprefix string, database string, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}, curDate string) error {
 	svcAthena := athena.New(sess)
 
 	sql := "CREATE DATABASE IF NOT EXISTS `" + database + "`"
@@ -122,8 +122,7 @@ func createAthenaTable(sess *session.Session, tableprefix string, database strin
 		cols += "`" + columns[col].Name + "` " + columns[col].Type + ",\n"
 	}
 	cols = cols[:strings.LastIndex(cols, ",")]
-	start := time.Now()
-	table := tableprefix + "_" + start.Format("200601")
+	table := tableprefix + "_" + curDate
 
 	sql = "CREATE EXTERNAL TABLE IF NOT EXISTS `" + table + "` (" + cols + ") STORED AS PARQUET LOCATION '" + s3path + "'"
 	if err := sendQuery(svcAthena, database, sql, meta["accountId"].(string), meta["region"].(string)); err != nil {
@@ -145,19 +144,29 @@ type Message struct {
 	CurDatabase           string `json:"cur_database"`
 }
 
-func processCUR(m Message, topLevelDestPath string) ([]curconvert.CurColumn, string, error) {
+func processCUR(m Message, topLevelDestPath string) ([]curconvert.CurColumn, string, string, error) {
 	if len(m.SourceBucket) < 1 {
-		return nil, "", errors.New("Must supply a source bucket")
+		return nil, "", "", errors.New("Must supply a source bucket")
 	}
 	if len(m.CurReportDescriptor) < 1 {
-		return nil, "", errors.New("Must supply a report descriptor")
+		return nil, "", "", errors.New("Must supply a report descriptor")
 	}
 
-	start := time.Now()
-	end := start.AddDate(0, 1, 0)
-	curDate := start.Format("200601") + "01-" + end.Format("2006") + fmt.Sprintf("%02d", start.Month()+1) + "01"
+	t1 := time.Now()
+	t1First := time.Date(t1.Year(), t1.Month(), 1, 0, 0, 0, 0, time.Local)
+
+	t2 := t1First.AddDate(0, 1, 0)
+	t2First := time.Date(t2.Year(), t2.Month(), 1, 0, 0, 0, 0, time.Local)
+
+	// Still process last months CUR until the 2nd of the month - as most likely it wont exist yet
+	if t1.Day() == t1First.Day() {
+		t1First = t1First.AddDate(0, 0, -1)
+		t2First = t2First.AddDate(0, 0, -1)
+	}
+	destPathDate := fmt.Sprintf("%d%02d", t1First.Year(), t1First.Month())
+	curDate := fmt.Sprintf("%d%02d01-%d%02d01", t1First.Year(), t1First.Month(), t2First.Year(), t2First.Month())
 	manifest := m.ReportPath + "/" + curDate + "/" + m.ReportName + "-Manifest.json"
-	destPath := topLevelDestPath + "/" + m.CurDatabase + "/" + m.CurReportDescriptor + "/" + start.Format("200601")
+	destPath := topLevelDestPath + "/" + m.CurDatabase + "/" + m.CurReportDescriptor + "/" + destPathDate
 
 	cc := curconvert.NewCurConvert(m.SourceBucket, manifest, m.DestinationBucket, destPath)
 	if len(m.SourceRoleArn) > 1 {
@@ -168,15 +177,15 @@ func processCUR(m Message, topLevelDestPath string) ([]curconvert.CurColumn, str
 	}
 
 	if err := cc.ConvertCur(); err != nil {
-		return nil, "", errors.New("Could not convert CUR: " + err.Error())
+		return nil, "", "", errors.New("Could not convert CUR: " + err.Error())
 	}
 
 	cols, err := cc.GetCURColumns()
 	if err != nil {
-		return nil, "", errors.New("Could not obtain CUR columns: " + err.Error())
+		return nil, "", "", errors.New("Could not obtain CUR columns: " + err.Error())
 	}
 
-	return cols, "s3://" + m.DestinationBucket + "/" + destPath + "/", nil
+	return cols, "s3://" + m.DestinationBucket + "/" + destPath + "/", destPathDate, nil
 }
 
 func doLog(logger *cwlogger.Logger, m string) {
@@ -246,12 +255,11 @@ func main() {
 					if len(m.CurDatabase) < 1 {
 						m.CurDatabase = "cur"
 					}
-
-					columns, s3path, err := processCUR(m, topLevelDestPath)
+					columns, s3path, curDate, err := processCUR(m, topLevelDestPath)
 					if err != nil {
 						doLog(logger, "Failed to process CUR conversion, error: "+err.Error())
 					} else {
-						if err = createAthenaTable(sess, m.CurReportDescriptor, m.CurDatabase, columns, s3path, meta); err != nil {
+						if err = createAthenaTable(sess, m.CurReportDescriptor, m.CurDatabase, columns, s3path, meta, curDate); err != nil {
 							doLog(logger, "Falied to create/update Athena tables, error: "+err.Error())
 						} else {
 							// send back success of processing messages
