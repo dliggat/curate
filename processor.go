@@ -178,22 +178,21 @@ func processCUR(m Message, topLevelDestPath string, logger *cwlogger.Logger) ([]
 	if err := cc.CheckCURExists(); err != nil {
 		if err.(awserr.Error).Code() != s3.ErrCodeNoSuchKey {
 			return nil, "", "", errors.New("Error fetching CUR Manifest: " + err.Error())
-		} else {
-			if t1.Day() > 3 {
-				return nil, "", "", errors.New("Error fetching CUR Manifest, NoSuchKey and too delayed: " + err.Error())
-			} else { // Regress to processing last months CUR. Error is ErrCodeNoSuchKey and still early in the month
-				doLog(logger, "Reseting to previous months CUR for "+m.CurReportDescriptor)
-				t1First = t1First.AddDate(0, 0, -1)
-				t2First = t2First.AddDate(0, 0, -1)
-				curDate = fmt.Sprintf("%d%02d01-%d%02d01", t1First.Year(), t1First.Month(), t2First.Year(), t2First.Month())
-				manifest = m.ReportPath + "/" + curDate + "/" + m.ReportName + "-Manifest.json"
-				cc.SetSourceManifest(manifest)
-
-				destPathDate = fmt.Sprintf("%d%02d", t1First.Year(), t1First.Month())
-				destPath = topLevelDestPath + "/" + m.CurDatabase + "/" + m.CurReportDescriptor + "/" + destPathDate
-				cc.SetDestPath(destPath)
-			}
 		}
+		if t1.Day() > 3 {
+			return nil, "", "", errors.New("Error fetching CUR Manifest, NoSuchKey and too delayed: " + err.Error())
+		}
+		// Regress to processing last months CUR. Error is ErrCodeNoSuchKey and still early in the month
+		doLog(logger, "Reseting to previous months CUR for "+m.CurReportDescriptor)
+		t1First = t1First.AddDate(0, 0, -1)
+		t2First = t2First.AddDate(0, 0, -1)
+		curDate = fmt.Sprintf("%d%02d01-%d%02d01", t1First.Year(), t1First.Month(), t2First.Year(), t2First.Month())
+		manifest = m.ReportPath + "/" + curDate + "/" + m.ReportName + "-Manifest.json"
+		cc.SetSourceManifest(manifest)
+
+		destPathDate = fmt.Sprintf("%d%02d", t1First.Year(), t1First.Month())
+		destPath = topLevelDestPath + "/" + m.CurDatabase + "/" + m.CurReportDescriptor + "/" + destPathDate
+		cc.SetDestPath(destPath)
 	}
 
 	if err := cc.ConvertCur(); err != nil {
