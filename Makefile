@@ -1,4 +1,4 @@
-.PHONY: _check-params _check-template create-stack update-stack delete-stack describe-stack build put-ddb
+.PHONY: _check-params _check-template create-stack update-stack delete-stack describe-stack build put-ddb add-job
 BINARY = processor
 
 # Read the cloudformation/parameters.json file for the ProjectName and EnvionmentName.
@@ -10,6 +10,9 @@ ifdef SUFFIX
 else
 	STACK_NAME = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-$(TEMPLATE)-stack
 endif
+JSON = $(shell cat ./data/$(DATA).json | python -c 'import sys, json; j = json.load(sys.stdin); d = {k:v["S"] for k,v in j.iteritems()}; print(json.dumps(d));')
+QUEUE = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-queue-url
+QUEUEURL = $(shell aws cloudformation list-exports --query 'Exports[?Name==`$(QUEUE)`].Value' --output text)
 
 _check-params:
 ifndef PARAMS
@@ -49,3 +52,6 @@ build:
 
 put-ddb:
 	aws dynamodb put-item --table-name curate-prod-config --item file://data/$(DATA).json
+
+add-job:
+	aws sqs send-message --queue-url $(QUEUEURL) --message-body '${JSON}'
