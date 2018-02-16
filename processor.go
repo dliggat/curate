@@ -144,6 +144,7 @@ type Message struct {
 	DestinationRoleArn    string `json:"destination_role_arn"`
 	DestinationExternalId string `json:"destination_external_id"`
 	CurDatabase           string `json:"cur_database"`
+	Date                  string `json:date`
 }
 
 func processCUR(m Message, topLevelDestPath string, logger *cwlogger.Logger) ([]curconvert.CurColumn, string, string, error) {
@@ -154,9 +155,19 @@ func processCUR(m Message, topLevelDestPath string, logger *cwlogger.Logger) ([]
 		return nil, "", "", errors.New("Must supply a report descriptor")
 	}
 
-	t1 := time.Now()
-	t1First := time.Date(t1.Year(), t1.Month(), 1, 0, 0, 0, 0, time.Local)
+	var t1 time.Time
+	var err error
+	if len(m.Date) > 0 {
+		doLog(logger, "Overriding date for CUR conversion to "+m.Date)
+		t1, err = time.Parse("20060102", m.Date)
+		if err != nil {
+			return nil, "", "", errors.New("Could not parse given date overide: " + m.Date + ", " + err.Error())
+		}
+	} else {
+		t1 = time.Now()
+	}
 
+	t1First := time.Date(t1.Year(), t1.Month(), 1, 0, 0, 0, 0, time.Local)
 	t2 := t1First.AddDate(0, 1, 0)
 	t2First := time.Date(t2.Year(), t2.Month(), 1, 0, 0, 0, 0, time.Local)
 
