@@ -33,6 +33,16 @@ Parameters:
     Type: String
     Description: The size of the instance
 
+  BlockVolumeSize: 
+    Type: String
+    Description: The size of the root block device volume in GBs
+    Default: 20
+
+  BlockDeviceName:
+    Type: String
+    Description: The block device mapping name, see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nvme-ebs-volumes.html
+    Default: "/dev/xvda"
+
   SpotPrice:
     Type: String
     Description: The Maximum price for the instance you want to pay (Note you will be charged based on the current price)
@@ -238,6 +248,13 @@ Resources:
       SpotPrice: { Ref: SpotPrice }
       SecurityGroups:
         - { Ref: SecurityGroup }
+      EbsOptimized: "true"
+      BlockDeviceMappings:
+        - DeviceName: { Ref: BlockDeviceName } 
+          Ebs: 
+            VolumeSize: { Ref: BlockVolumeSize }
+            VolumeType: "gp2"
+            DeleteOnTermination: "true"
       UserData:
         "Fn::Base64":
           "Fn::Sub":
@@ -275,6 +292,8 @@ Resources:
 
       MinSize: { Ref: AsgMinSize }
       MaxSize: { Ref: AsgMaxSize }
+      MetricsCollection:
+        - Granularity: 1Minute
       LaunchConfigurationName: { Ref: LaunchConfig }
       VPCZoneIdentifier:
         - "Fn::ImportValue": { Ref: SubnetAZ0ExportIdentifier }
@@ -352,7 +371,7 @@ Resources:
                   - queue
                   - name
       ComparisonOperator: LessThanThreshold
-      MetricName: ApproximateNumberOfMessagesVisible
+      MetricName: ApproximateNumberOfMessagesNotVisible
 
 
 Outputs:
