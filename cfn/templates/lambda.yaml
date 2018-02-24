@@ -81,10 +81,13 @@ Resources:
               import boto3
               import json
               import logging
+              import random
 
               logging.basicConfig()
               logger = logging.getLogger(__name__)
               logger.setLevel(logging.INFO)
+
+              MAX_DELAY_SECONDS = 900
 
               def handler(event, context):
                   logger.info('Event: ' + json.dumps(event))
@@ -102,7 +105,8 @@ Resources:
                   for item in data:
                       payload = json.dumps(item)
                       logger.info('Sending {} to {}'.format(payload, queue_url))
-                      client.send_message(QueueUrl=queue_url, MessageBody=payload)
+                      delay = random.randint(0, MAX_DELAY_SECONDS)
+                      client.send_message(QueueUrl=queue_url, MessageBody=payload, DelaySeconds=delay)
 
             - table: { Ref: ResultTable }
               queue_url: { Ref: Queue }
