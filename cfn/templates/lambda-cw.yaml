@@ -56,7 +56,14 @@ Resources:
               logger = logging.getLogger(__name__)
               logger.setLevel(logging.INFO)
 
-              def publish_metric(value, metric_name, namespace='Custom'):
+              defaultDimension = [ 
+                {
+                  'Name': 'QueueName',
+                  'Value': '${queue_name}'
+                }
+              ]
+
+              def publish_metric(value, metric_name, namespace='Custom', dimension=defaultDimension):
                 logger.info('Publishing to CloudWatch')
                 client = boto3.client('cloudwatch')
                 client.put_metric_data(
@@ -64,7 +71,8 @@ Resources:
                   MetricData=[
                     {
                       'MetricName': metric_name,
-                      'Value': int(value)
+                      'Value': int(value),
+                      'Dimensions': dimension
                     }
                   ]
                 )
@@ -87,6 +95,14 @@ Resources:
                       - { Ref: EnvironmentName }
                       - queue
                       - url
+              queue_name: 
+                "Fn::ImportValue":
+                  "Fn::Join":
+                    - "-"
+                    - - { Ref: ProjectName }
+                      - { Ref: EnvironmentName }
+                      - queue
+                      - name
 
       Role: { "Fn::GetAtt": [ LambdaFunctionExecutionRole, Arn ] }
       Timeout: { Ref: Timeout }
