@@ -73,7 +73,7 @@ Parameters:
     MinValue: 60
 
   AsgCooldown:
-    Default: 300
+    Default: 30
     Description: Scaling policy cooldown duration (secs)
     Type: Number
     MinValue: 10
@@ -326,7 +326,7 @@ Resources:
       Period: { Ref: AsgEvaluationPeriodDuration }
       AlarmActions:
         - { Ref: ScaleOutPolicy }
-      Namespace: AWS/SQS
+      Namespace: Curate
       Dimensions:
         - Name: QueueName
           Value:
@@ -343,10 +343,10 @@ Resources:
   ScaleInPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
-      AdjustmentType: ChangeInCapacity
+      AdjustmentType: ExactCapacity
       PolicyType: SimpleScaling
       AutoScalingGroupName: { Ref: Asg }
-      ScalingAdjustment: { Ref: AsgScaleInAdjustment }
+      ScalingAdjustment: 0
       Cooldown: { Ref: AsgCooldown }
 
   ScaleInAlarm:
@@ -359,7 +359,7 @@ Resources:
       Period: { Ref: AsgEvaluationPeriodDuration }
       AlarmActions:
         - { Ref: ScaleInPolicy }
-      Namespace: AWS/SQS
+      Namespace: Curate
       Dimensions:
         - Name: QueueName
           Value:
