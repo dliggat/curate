@@ -1,0 +1,194 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Configuration for curate - Lambda, DynamoDB, SQS
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name for this project; e.g. downtime-notifier, dynamodb-scaler
+
+  EnvironmentName:
+    Type: String
+    Description: Name for this environment; e.g. development, staging, production
+
+  ScheduleExpression:
+    Type: String
+    Default: ""
+    Description: How often to invoke the function (e.g. 'rate(24 hours)'), or empty string to skip creating a AWS::Events::Rule
+
+  Runtime:
+    Type: String
+    Description: Runtime for the function; e.g. python2.7
+
+  Timeout:
+    Type: Number
+    Description: Timeout for the function in seconds
+
+  MemorySize:
+    Type: Number
+    Description: Memory for the function in MB
+
+Conditions:
+  HasSchedule:
+    "Fn::Not":
+      - "Fn::Equals":
+          - { Ref: ScheduleExpression }
+          - ""
+
+Resources:
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      Comment:
+        "Fn::Sub":
+          "Function for ${ProjectName}-${EnvironmentName}"
+    DependsOn: [ LambdaFunctionExecutionRole ]
+    Properties:
+      Code:
+        ZipFile:
+          "Fn::Sub":
+            - |-
+              import boto3
+              import json
+              import logging
+              import random
+
+              logging.basicConfig()
+              logger = logging.getLogger(__name__)
+              logger.setLevel(logging.INFO)
+
+              def _publish_metric(value, metric_name, namespace='Custom'):
+                logger.info('Publishing to CloudWatch')
+                client.put_metric_data(
+                  Namespace=namespace,
+                  MetricData=[
+                    {
+                      'MetricName': metric_name,
+                      'Value': value
+                    }
+                  ]
+                )
+
+              def handler(event, context):
+                  logger.info('Event: ' + json.dumps(event))
+                  queue_url = '${queue_url}'
+                  client = boto3.client('sqs')
+
+                  response = client.get_queue_attributes(
+                    QueueUrl=queue_url,
+                    AttributeNames=['All']
+                  )
+                  logger.info(response)
+            - queue_url: 
+                "Fn::ImportValue":
+                  "Fn::Join":
+                    - "-"
+                    - - { Ref: ProjectName }
+                      - { Ref: EnvironmentName }
+                      - queue
+                      - url
+
+      Role: { "Fn::GetAtt": [ LambdaFunctionExecutionRole, Arn ] }
+      Timeout: { Ref: Timeout }
+      Handler: index.handler
+      Runtime: { Ref: Runtime }
+      MemorySize: { Ref: MemorySize }
+      Environment:
+        Variables:
+          EnvironmentName: { Ref: EnvironmentName }
+          ProjectName: { Ref: ProjectName }
+
+
+  LambdaFunctionExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ lambda.amazonaws.com ]
+            Action:
+              - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS:
+                - "Fn::Join":
+                  - ""
+                  - - "arn:aws:iam::"
+                    - { Ref: "AWS::AccountId" }
+                    - ":"
+                    - "root"
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: WriteLogsToCloudWatch
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "arn:aws:logs:*:*:*"
+        - PolicyName: CloudwatchPushHighFreqSQSMetrics
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "sqs:GetQueueAttributes"
+                Resource:
+                  "Fn::ImportValue":
+                      "Fn::Join":
+                        - "-"
+                        - - { Ref: ProjectName }
+                          - { Ref: EnvironmentName }
+                          - queue
+                          - arn
+              - Effect: Allow
+                Action:
+                  - "cloudwatch:PutMetricData"
+                Resource: "*"
+
+
+  # Permits the events service to invoke the service.
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Condition: HasSchedule
+    Properties:
+      Action: lambda:InvokeFunction
+      SourceArn:
+        "Fn::GetAtt": [ ScheduledRule, Arn ]
+      FunctionName: { "Fn::GetAtt": [ LambdaFunction, Arn ] }
+      Principal: events.amazonaws.com
+
+  # The cron rule for the execution.
+  ScheduledRule:
+    Type: AWS::Events::Rule
+    Condition: HasSchedule
+    Properties:
+      Description:
+        "Fn::Sub":
+          "Scheduled rule for ${ProjectName}-${EnvironmentName}"
+      ScheduleExpression: { Ref : ScheduleExpression }
+      State: ENABLED
+      Targets:
+        - Arn: { "Fn::GetAtt": [ LambdaFunction, Arn ] }
+          Id: ScheduledRule
+
+Outputs:
+  LambdaFunction:
+    Value: { Ref : LambdaFunction }
+  LambdaFunctionARN:
+    Value: { "Fn::GetAtt": [ LambdaFunction, Arn ] }
+  LambdaFunctionExecutionRole:
+    Value: { Ref : LambdaFunctionExecutionRole }
+  LambdaFunctionExecutionRoleARN:
+    Value: { "Fn::GetAtt": [ LambdaFunctionExecutionRole, Arn ] }
+  TestCommand:
+    Value:
+      "Fn::Sub": |
+        aws lambda invoke --function-name ${LambdaFunction} /tmp/${LambdaFunction}-output.txt; cat /tmp/${LambdaFunction}-output.txt
