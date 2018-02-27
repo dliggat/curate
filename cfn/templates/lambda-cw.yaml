@@ -51,26 +51,25 @@ Resources:
               import boto3
               import json
               import logging
-              import random
 
               logging.basicConfig()
               logger = logging.getLogger(__name__)
               logger.setLevel(logging.INFO)
 
-              def _publish_metric(value, metric_name, namespace='Custom'):
+              def publish_metric(value, metric_name, namespace='Custom'):
                 logger.info('Publishing to CloudWatch')
+                client = boto3.client('cloudwatch')
                 client.put_metric_data(
                   Namespace=namespace,
                   MetricData=[
                     {
                       'MetricName': metric_name,
-                      'Value': value
+                      'Value': int(value)
                     }
                   ]
                 )
 
               def handler(event, context):
-                  logger.info('Event: ' + json.dumps(event))
                   queue_url = '${queue_url}'
                   client = boto3.client('sqs')
 
@@ -78,7 +77,8 @@ Resources:
                     QueueUrl=queue_url,
                     AttributeNames=['All']
                   )
-                  logger.info(response)
+                  publish_metric(response["Attributes"]["ApproximateNumberOfMessages"], "ApproximateNumberOfMessagesVisible", "Curate")
+                  publish_metric(response["Attributes"]["ApproximateNumberOfMessagesNotVisible"], "ApproximateNumberOfMessagesNotVisible", "Curate")
             - queue_url: 
                 "Fn::ImportValue":
                   "Fn::Join":
