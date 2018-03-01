@@ -129,6 +129,11 @@ Resources:
                 Resource: "*"
               - Effect: Allow
                 Action:
+                  - "autoscaling:DescribeAutoScalingInstances"
+                  - "autoscaling:SetInstanceProtection"
+                Resource: "*"
+              - Effect: Allow
+                Action:
                   - "sqs:ChangeMessageVisibility"
                   - "sqs:ChangeMessageVisibilityBatch"
                   - "sqs:DeleteMessage"
