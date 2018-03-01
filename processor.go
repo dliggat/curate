@@ -16,12 +16,45 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/athena"
+	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/jcxplorer/cwlogger"
 )
+
+func setASGInstanceProtection(sess *session.Session, instanceID string, asgName string, state bool) error {
+	svc := autoscaling.New(sess)
+	_, err := svc.SetInstanceProtection(
+		&autoscaling.SetInstanceProtectionInput{
+			AutoScalingGroupName: aws.String(asgName),
+			InstanceIds: []*string{
+				aws.String(instanceID),
+			},
+			ProtectedFromScaleIn: aws.Bool(state),
+		})
+	return err
+}
+
+func getASGForInstance(sess *session.Session, instanceID string) (string, error) {
+	svc := autoscaling.New(sess)
+	resp, err := svc.DescribeAutoScalingInstances(
+		&autoscaling.DescribeAutoScalingInstancesInput{
+			InstanceIds: []*string{
+				aws.String(instanceID),
+			},
+			MaxRecords: aws.Int64(1),
+		})
+	if err != nil {
+		return "", err
+	}
+	if len(resp.AutoScalingInstances) < 1 {
+		return "", err
+	}
+	asgName := resp.AutoScalingInstances[0].AutoScalingGroupName
+	return *asgName, nil
+}
 
 func getInstanceMetadata(sess *session.Session) map[string]interface{} {
 	c := &http.Client{
@@ -243,6 +276,7 @@ func main() {
 
 	// Check if running on EC2
 	_, ec2 := meta["instanceId"].(string)
+	var asgName string
 	var logger *cwlogger.Logger
 	if ec2 { // Init Cloudwatch Logger class if were running on EC2
 		var err error
@@ -255,6 +289,11 @@ func main() {
 		}
 		defer logger.Close()
 		doLog(logger, "curate running on "+meta["instanceId"].(string)+" in "+meta["availabilityZone"].(string))
+
+		asgName, err = getASGForInstance(sess, meta["instanceId"].(string))
+		if err != nil {
+			doLog(logger, "couldnt find ASG for "+meta["instanceId"].(string))
+		}
 	}
 
 	// create sqs handler
@@ -275,6 +314,12 @@ func main() {
 		if err != nil {
 			doLog(logger, err.Error())
 		} else {
+			if ec2 && len(asgName) > 0 {
+				err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, true)
+				if err != nil {
+					doLog(logger, "Failed to set instance protection for instancte"+meta["instanceId"].(string)+" on ASG "+asgName)
+				}
+			}
 			for _, message := range resp.Messages {
 				var m Message
 				if err := json.Unmarshal([]byte(*message.Body), &m); err != nil {
@@ -305,6 +350,12 @@ func main() {
 							}
 						}
 					}
+				}
+			}
+			if ec2 && len(asgName) > 0 {
+				err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, false)
+				if err != nil {
+					doLog(logger, "Failed to unset instance protection for instancte"+meta["instanceId"].(string)+" on ASG "+asgName)
 				}
 			}
 		}
