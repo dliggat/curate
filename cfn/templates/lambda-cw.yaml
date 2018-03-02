@@ -63,6 +63,13 @@ Resources:
                 }
               ]
 
+              asgDimension = [ 
+                {
+                  'Name': 'AsgName',
+                  'Value': '${asg_name}'
+                }
+              ]
+
               def publish_metric(value, metric_name, namespace='Custom', dimension=defaultDimension):
                 logger.info('Publishing to CloudWatch')
                 client = boto3.client('cloudwatch')
@@ -79,14 +86,29 @@ Resources:
 
               def handler(event, context):
                   queue_url = '${queue_url}'
+                  asg_name = '${asg_name}'
                   client = boto3.client('sqs')
+                  asg = boto3.client('autoscaling')
 
-                  response = client.get_queue_attributes(
+                  rSQS = client.get_queue_attributes(
                     QueueUrl=queue_url,
                     AttributeNames=['All']
                   )
-                  publish_metric(response["Attributes"]["ApproximateNumberOfMessages"], "ApproximateNumberOfMessagesVisible", "Curate")
-                  publish_metric(response["Attributes"]["ApproximateNumberOfMessagesNotVisible"], "ApproximateNumberOfMessagesNotVisible", "Curate")
+                  publish_metric(rSQS["Attributes"]["ApproximateNumberOfMessages"], "ApproximateNumberOfMessagesVisible", "Curate")
+                  publish_metric(rSQS["Attributes"]["ApproximateNumberOfMessagesNotVisible"], "ApproximateNumberOfMessagesNotVisible", "Curate")
+
+                  rASG = asg.describe_auto_scaling_groups(
+                    AutoScalingGroupNames=[asg_name]
+                  )
+                  if len(rASG["AutoScalingGroups"]) > 0:
+                    instance_total = instance_idle = 0
+                    for instance in rASG["AutoScalingGroups"][0]["Instances"]:
+                        instance_total += 1
+                        if instance["ProtectedFromScaleIn"] == False and instance["LifecycleState"] == 'InService' and instance["HealthStatus"] == 'Healthy':
+                          instance_idle += 1
+                    publish_metric(instance_idle, "NumberofInstancesIdle", "Curate", asgDimension)
+                    publish_metric(int(rSQS["Attributes"]["ApproximateNumberOfMessages"]) - instance_total, "QueuetoAsgFactor", "Curate") 
+
             - queue_url: 
                 "Fn::ImportValue":
                   "Fn::Join":
@@ -103,6 +125,14 @@ Resources:
                       - { Ref: EnvironmentName }
                       - queue
                       - name
+              asg_name:
+                "Fn::ImportValue":
+                  "Fn::Join":
+                    - "-"
+                    - - { Ref: ProjectName }
+                      - { Ref: EnvironmentName }
+                      - "asg"
+                      - "name"
 
       Role: { "Fn::GetAtt": [ LambdaFunctionExecutionRole, Arn ] }
       Timeout: { Ref: Timeout }
@@ -167,6 +197,10 @@ Resources:
               - Effect: Allow
                 Action:
                   - "cloudwatch:PutMetricData"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "autoscaling:DescribeAutoScalingGroups"
                 Resource: "*"
 
 

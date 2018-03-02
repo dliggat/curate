@@ -60,9 +60,15 @@ Parameters:
     MinValue: 0
     MaxValue: 20
 
-  AsgEvaluationPeriods:
+  AsgScaleInEvaluationPeriods:
     Default: 1
-    Description: Evaluation periods for scale-out / scale-in actions
+    Description: Evaluation periods for scale-in actions
+    Type: Number
+    MinValue: 1
+
+  AsgScaleOutEvaluationPeriods:
+    Default: 2
+    Description: Evaluation periods for scale-out actions
     Type: Number
     MinValue: 1
 
@@ -93,11 +99,6 @@ Parameters:
   AsgScaleInThreshold:
     Default: 1
     Description: Queue depth threshold for scale-in
-    Type: Number
-
-  AsgScaleInAdjustment:
-    Default: -1
-    Description: Queue depth threshold for scale-out
     Type: Number
 
 
@@ -313,18 +314,27 @@ Resources:
       EstimatedInstanceWarmup: { Ref: AsgWarmup }
       StepAdjustments:
         - MetricIntervalLowerBound: 0
-          MetricIntervalUpperBound: 9
+          MetricIntervalUpperBound: 1
           ScalingAdjustment: 1
-        - MetricIntervalLowerBound: 9
-          MetricIntervalUpperBound: 19
+        - MetricIntervalLowerBound: 1
+          MetricIntervalUpperBound: 2
           ScalingAdjustment: 2
-        - MetricIntervalLowerBound: 19
+        - MetricIntervalLowerBound: 2
+          MetricIntervalUpperBound: 4
           ScalingAdjustment: 3
+        - MetricIntervalLowerBound: 4
+          MetricIntervalUpperBound: 7
+          ScalingAdjustment: 4
+        - MetricIntervalLowerBound: 7
+          MetricIntervalUpperBound: 12
+          ScalingAdjustment: 5
+        - MetricIntervalLowerBound: 12
+          ScalingAdjustment: 6
 
   ScaleOutAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      EvaluationPeriods: { Ref: AsgEvaluationPeriods }
+      EvaluationPeriods: { Ref: AsgScaleOutEvaluationPeriods }
       Statistic: Average
       Threshold: { Ref: AsgScaleOutThreshold }
       AlarmDescription: Alarm if SQS queue depth is above threshold
@@ -343,21 +353,38 @@ Resources:
                   - queue
                   - name
       ComparisonOperator: GreaterThanOrEqualToThreshold
-      MetricName: ApproximateNumberOfMessagesVisible
+      MetricName: QueuetoAsgFactor
 
   ScaleInPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
-      AdjustmentType: ExactCapacity
-      PolicyType: SimpleScaling
+      AdjustmentType: ChangeInCapacity
+      PolicyType: StepScaling
       AutoScalingGroupName: { Ref: Asg }
-      ScalingAdjustment: 0
-      Cooldown: { Ref: AsgCooldown }
+      EstimatedInstanceWarmup: { Ref: AsgWarmup }
+      StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          MetricIntervalUpperBound: 1
+          ScalingAdjustment: -1
+        - MetricIntervalLowerBound: 1
+          MetricIntervalUpperBound: 2
+          ScalingAdjustment: -2
+        - MetricIntervalLowerBound: 2
+          MetricIntervalUpperBound: 3
+          ScalingAdjustment: -3
+        - MetricIntervalLowerBound: 3
+          MetricIntervalUpperBound: 4
+          ScalingAdjustment: -4
+        - MetricIntervalLowerBound: 4
+          MetricIntervalUpperBound: 5
+          ScalingAdjustment: -5
+        - MetricIntervalLowerBound: 5
+          ScalingAdjustment: -6
 
   ScaleInAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      EvaluationPeriods: { Ref: AsgEvaluationPeriods }
+      EvaluationPeriods: { Ref: AsgScaleInEvaluationPeriods }
       Statistic: Average
       Threshold: { Ref: AsgScaleInThreshold }
       AlarmDescription: Alarm if SQS queue depth is below threshold
@@ -366,18 +393,17 @@ Resources:
         - { Ref: ScaleInPolicy }
       Namespace: Curate
       Dimensions:
-        - Name: QueueName
+        - Name: AsgName
           Value:
             "Fn::ImportValue":
               "Fn::Join":
                 - "-"
                 - - { Ref: ProjectName }
                   - { Ref: EnvironmentName }
-                  - queue
+                  - asg 
                   - name
-      ComparisonOperator: LessThanThreshold
-      MetricName: ApproximateNumberOfMessagesNotVisible
-
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      MetricName: NumberofInstancesIdle
 
 Outputs:
   SgIdExport:
@@ -389,3 +415,13 @@ Outputs:
           - - { Ref: ProjectName }
             - { Ref: EnvironmentName }
             - "SgId"
+  AsgName:
+    Value: { Ref: Asg }
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - "asg"
+            - "name"
