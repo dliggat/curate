@@ -317,7 +317,7 @@ func main() {
 			if ec2 && len(asgName) > 0 {
 				err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, true)
 				if err != nil {
-					doLog(logger, "Failed to set instance protection for instancte"+meta["instanceId"].(string)+" on ASG "+asgName)
+					doLog(logger, "Failed to set instance protection for instance "+meta["instanceId"].(string)+" on ASG "+asgName+" error: "+err.Error())
 				}
 			}
 			for _, message := range resp.Messages {
@@ -332,10 +332,10 @@ func main() {
 					}
 					columns, s3path, curDate, err := processCUR(m, topLevelDestPath, logger)
 					if err != nil {
-						doLog(logger, "Failed to process CUR conversion, error: "+err.Error())
+						doLog(logger, "Failed to process CUR conversion for report: "+m.CurReportDescriptor+", error: "+err.Error())
 					} else {
 						if err = createAthenaTable(sess, m.CurReportDescriptor, m.CurDatabase, columns, s3path, meta, curDate); err != nil {
-							doLog(logger, "Falied to create/update Athena tables, error: "+err.Error())
+							doLog(logger, "Falied to create/update Athena tables, report: "+m.CurReportDescriptor+" error: "+err.Error())
 						} else {
 							// send back success of processing messages
 							paramsDelete := &sqs.DeleteMessageInput{
@@ -344,7 +344,7 @@ func main() {
 							}
 							_, err = svc.DeleteMessage(paramsDelete)
 							if err != nil {
-								doLog(logger, "Failed to delete SQS message from queue, error: "+err.Error())
+								doLog(logger, "Failed to delete SQS message from queue, report: "+m.CurReportDescriptor+" error: "+err.Error())
 							} else {
 								doLog(logger, "Completed processing of job, report: "+m.CurReportDescriptor+", bucket: "+m.SourceBucket)
 							}
@@ -355,7 +355,7 @@ func main() {
 			if ec2 && len(asgName) > 0 {
 				err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, false)
 				if err != nil {
-					doLog(logger, "Failed to unset instance protection for instancte"+meta["instanceId"].(string)+" on ASG "+asgName)
+					doLog(logger, "Failed to unset instance protection for instance "+meta["instanceId"].(string)+" on ASG "+asgName+" error: "+err.Error())
 				}
 			}
 		}
