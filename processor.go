@@ -39,7 +39,7 @@ func setASGInstanceProtection(sess *session.Session, instanceID string, asgName 
 	var lastError error
 	for i := 1; i < 4; i++ {
 		if lastError != nil {
-			time.Sleep(time.Millisecond * time.Duration(rand.Intn(5)*i))
+			time.Sleep(time.Second * time.Duration(rand.Intn(5*i)))
 		}
 		_, lastError = svc.SetInstanceProtection(input)
 		if lastError == nil {
