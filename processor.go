@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -24,17 +25,29 @@ import (
 	"github.com/jcxplorer/cwlogger"
 )
 
-func setASGInstanceProtection(sess *session.Session, instanceID string, asgName string, state bool) error {
+func setASGInstanceProtection(sess *session.Session, instanceID string, asgName string, state bool, s chan bool) error {
 	svc := autoscaling.New(sess)
-	_, err := svc.SetInstanceProtection(
-		&autoscaling.SetInstanceProtectionInput{
-			AutoScalingGroupName: aws.String(asgName),
-			InstanceIds: []*string{
-				aws.String(instanceID),
-			},
-			ProtectedFromScaleIn: aws.Bool(state),
-		})
-	return err
+	input := &autoscaling.SetInstanceProtectionInput{
+		AutoScalingGroupName: aws.String(asgName),
+		InstanceIds: []*string{
+			aws.String(instanceID),
+		},
+		ProtectedFromScaleIn: aws.Bool(state),
+	}
+
+	s <- true
+	var lastError error
+	for i := 0; i < 2; i++ {
+		if lastError != nil {
+			time.Sleep(time.Millisecond * time.Duration(rand.Intn(5)))
+		}
+		_, lastError = svc.SetInstanceProtection(input)
+		if lastError == nil {
+			break
+		}
+	}
+	<-s
+	return lastError
 }
 
 func getASGForInstance(sess *session.Session, instanceID string) (string, error) {
@@ -308,6 +321,9 @@ func main() {
 		WaitTimeSeconds:     aws.Int64(20),
 	}
 
+	// setup channel for semaphore control over instance protection
+	s := make(chan bool, 1)
+
 	// loop for messages
 	for true {
 		resp, err := svc.ReceiveMessage(params)
@@ -315,10 +331,12 @@ func main() {
 			doLog(logger, err.Error())
 		} else {
 			if ec2 && len(asgName) > 0 {
-				err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, true)
-				if err != nil {
-					doLog(logger, "Failed to set instance protection for instance "+meta["instanceId"].(string)+" on ASG "+asgName+" error: "+err.Error())
-				}
+				go func() {
+					err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, true, s)
+					if err != nil {
+						doLog(logger, "Failed to set instance protection for instance "+meta["instanceId"].(string)+" on ASG "+asgName+" error: "+err.Error())
+					}
+				}()
 			}
 			for _, message := range resp.Messages {
 				var m Message
@@ -353,10 +371,12 @@ func main() {
 				}
 			}
 			if ec2 && len(asgName) > 0 {
-				err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, false)
-				if err != nil {
-					doLog(logger, "Failed to unset instance protection for instance "+meta["instanceId"].(string)+" on ASG "+asgName+" error: "+err.Error())
-				}
+				go func() {
+					err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, false, s)
+					if err != nil {
+						doLog(logger, "Failed to unset instance protection for instance "+meta["instanceId"].(string)+" on ASG "+asgName+" error: "+err.Error())
+					}
+				}()
 			}
 		}
 	}
