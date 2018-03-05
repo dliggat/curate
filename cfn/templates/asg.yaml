@@ -267,8 +267,7 @@ Resources:
           "Fn::Sub":
             - |-
               #!/bin/bash
-              yum update -y
-              yum install -y git sl gcc mysql
+              yum install -y git
               git clone ${git_repo} repo
               cd repo
               ./bin/processor --sqsqueue ${sqs_queue}
