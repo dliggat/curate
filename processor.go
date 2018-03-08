@@ -25,28 +25,39 @@ import (
 	"github.com/jcxplorer/cwlogger"
 )
 
-func setASGInstanceProtection(sess *session.Session, instanceID string, asgName string, state bool, s chan bool) error {
-	svc := autoscaling.New(sess)
-	input := &autoscaling.SetInstanceProtectionInput{
-		AutoScalingGroupName: aws.String(asgName),
-		InstanceIds: []*string{
-			aws.String(instanceID),
-		},
-		ProtectedFromScaleIn: aws.Bool(state),
-	}
+type instanceProtection struct {
+	sess       *session.Session
+	instanceID string
+	asgName    string
+	state      bool
+	s          chan bool
+}
 
-	s <- true
+func (ip *instanceProtection) set(state bool) error {
+	ip.s <- true
 	var lastError error
-	for i := 1; i < 4; i++ {
-		if lastError != nil {
-			time.Sleep(time.Second * time.Duration(rand.Intn(10*i)))
+	if ip.state != state {
+		svc := autoscaling.New(ip.sess)
+		input := &autoscaling.SetInstanceProtectionInput{
+			AutoScalingGroupName: aws.String(ip.asgName),
+			InstanceIds: []*string{
+				aws.String(ip.instanceID),
+			},
+			ProtectedFromScaleIn: aws.Bool(state),
 		}
-		_, lastError = svc.SetInstanceProtection(input)
-		if lastError == nil {
-			break
+
+		for i := 1; i < 6; i++ {
+			if lastError != nil {
+				time.Sleep(time.Second * time.Duration(rand.Intn(5*i)))
+			}
+			_, lastError = svc.SetInstanceProtection(input)
+			if lastError == nil {
+				ip.state = state
+				break
+			}
 		}
 	}
-	<-s
+	<-ip.s
 	return lastError
 }
 
@@ -321,8 +332,17 @@ func main() {
 		WaitTimeSeconds:     aws.Int64(20),
 	}
 
-	// setup channel for semaphore control over instance protection
-	s := make(chan bool, 1)
+	// Setup InstanceProtection struct
+	var ip *instanceProtection
+	if ec2 && len(asgName) > 0 {
+		ip = &instanceProtection{
+			sess:       sess,
+			instanceID: meta["instanceId"].(string),
+			asgName:    asgName,
+			state:      false,
+			s:          make(chan bool, 1),
+		}
+	}
 
 	// loop for messages
 	for true {
@@ -330,9 +350,9 @@ func main() {
 		if err != nil {
 			doLog(logger, err.Error())
 		} else {
-			if ec2 && len(asgName) > 0 {
+			if ip != nil {
 				go func() {
-					err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, true, s)
+					err := ip.set(true)
 					if err != nil {
 						doLog(logger, "Failed to set instance protection for instance "+meta["instanceId"].(string)+" on ASG "+asgName+" error: "+err.Error())
 					}
@@ -370,9 +390,9 @@ func main() {
 					}
 				}
 			}
-			if ec2 && len(asgName) > 0 {
+			if ip != nil {
 				go func() {
-					err := setASGInstanceProtection(sess, meta["instanceId"].(string), asgName, false, s)
+					err := ip.set(false)
 					if err != nil {
 						doLog(logger, "Failed to unset instance protection for instance "+meta["instanceId"].(string)+" on ASG "+asgName+" error: "+err.Error())
 					}
