@@ -31,7 +31,7 @@
   },
   {
     "ParameterKey": "VisibilityTimeout",
-    "ParameterValue": "3600",
+    "ParameterValue": "7200",
     "UsePreviousValue": false
   },
   {
