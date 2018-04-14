@@ -17,7 +17,21 @@ Parameters:
     Default: "curate"
 
 Resources:
+  LogBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain 
+    Properties:
+      BucketName:
+        Fn::Sub:
+          "${ProjectName}-${EnvironmentName}-logging"
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      AccessControl: LogDeliveryWrite
+
   CurateBucket:
+    DependsOn: LogBucket
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
     Properties:
@@ -25,6 +39,14 @@ Resources:
         Fn::Sub:
           "${ProjectName}-${EnvironmentName}-${BucketSuffix}"
       AccessControl: BucketOwnerFullControl
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LoggingConfiguration:
+        DestinationBucketName:
+          Ref: LogBucket
+        LogFilePrefix: !Join ['', ['S3/', !Ref LogBucket, '/']]
 Outputs:
   Bucket:
     Value: { Ref: CurateBucket }
