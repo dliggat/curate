@@ -323,12 +323,11 @@ func main() {
 	// create sqs handler
 	svc := sqs.New(sess)
 
-	// params for SQS Message Input. 20 second long poll, single message at a time, and hold message for 30mins for processing.
+	// params for SQS Message Input. 20 second long poll, single message at a time
 	params := &sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(queueUrl),
 		AttributeNames:      []*string{aws.String(".*")},
 		MaxNumberOfMessages: aws.Int64(1),
-		VisibilityTimeout:   aws.Int64(1800),
 		WaitTimeSeconds:     aws.Int64(20),
 	}
 
