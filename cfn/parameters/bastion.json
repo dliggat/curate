@@ -16,22 +16,12 @@
   },
   {
     "ParameterKey": "SubnetAZ0ExportIdentifier",
-    "ParameterValue": "curate-prod-PrivateSubnetAZ0",
+    "ParameterValue": "curate-prod-PublicSubnetAZ0",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "SubnetAZ1ExportIdentifier",
-    "ParameterValue": "curate-prod-PrivateSubnetAZ1",
-    "UsePreviousValue": false
-  },
-  {
-    "ParameterKey": "BastionSecurityGroupIdenifier",
-    "ParameterValue": "curate-prod-BastionSGIdentifier",
-    "UsePreviousValue": false
-  },
-  {
-    "ParameterKey": "GitRepo",
-    "ParameterValue": "https://github.com/dliggat/curate.git",
+    "ParameterValue": "curate-prod-PublicSubnetAZ1",
     "UsePreviousValue": false
   },
   {
@@ -46,27 +36,12 @@
   },
   {
     "ParameterKey": "InstanceType",
-    "ParameterValue": "c5.2xlarge",
+    "ParameterValue": "t2.micro",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "SpotPrice",
-    "ParameterValue": "0.34",
-    "UsePreviousValue": false
-  },
-  {
-    "ParameterKey": "AsgCooldown",
-    "ParameterValue": "30",
-    "UsePreviousValue": false
-  },
-  {
-    "ParameterKey": "AsgWarmup",
-    "ParameterValue": "60",
-    "UsePreviousValue": false
-  },
-  {
-    "ParameterKey": "BlockVolumeSize",
-    "ParameterValue": "20",
+    "ParameterValue": "0.10",
     "UsePreviousValue": false
   }
 ]

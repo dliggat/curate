@@ -20,6 +20,9 @@ Parameters:
   SubnetAZ1ExportIdentifier:
     Type: String
 
+  BastionSecurityGroupIdenifier:
+    Type: String
+
   GitRepo:
     Type: String
 
@@ -244,6 +247,16 @@ Resources:
               - - { Ref: ProjectName }
                 - { Ref: EnvironmentName }
                 - "sg"
+  
+  SecurityGroupSshIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: { Ref: SecurityGroup }
+      SourceSecurityGroupId: 
+        "Fn::ImportValue": { Ref: BastionSecurityGroupIdenifier }
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
 
   LaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration

@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Autohealing Amazon linux bastion
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name for this project; e.g. downtime-notifier, dynamodb-scaler
+
+  EnvironmentName:
+    Type: String
+    Description: Name for this environment; e.g. development, staging, production
+
+  VpcExportIdentifier:
+    Type: String
+
+  SubnetAZ0ExportIdentifier:
+    Type: String
+
+  SubnetAZ1ExportIdentifier:
+    Type: String
+
+  KeypairName:
+    Type: AWS::EC2::KeyPair::KeyName
+
+  SpotPrice:
+    Type: String
+    Description: The Maximum price for the instance you want to pay (Note you will be charged based on the current price)
+
+  AmiId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-8c1be5f6
+
+  InstanceType:
+    Type: String
+    Description: The size of the instance
+    Default: "t2.small"
+
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        "Fn::ImportValue": { Ref: VpcExportIdentifier }
+      GroupDescription:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - "sg"
+      Tags:
+        - Key: Name
+          Value:
+            "Fn::Join":
+              - "-"
+              - - { Ref: ProjectName }
+                - { Ref: EnvironmentName }
+                - "sg"
+
+  LaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: { Ref: AmiId }
+      KeyName: { Ref: KeypairName }
+      InstanceType: { Ref: InstanceType }
+      SpotPrice: { Ref: SpotPrice }
+      SecurityGroups:
+        - { Ref: SecurityGroup }
+
+  Asg:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            "Fn::Join":
+              - "-"
+              - - { Ref: ProjectName }
+                - { Ref: EnvironmentName }
+                - "asg"
+                - "bastion"
+          PropagateAtLaunch: true
+
+      MinSize: 1
+      MaxSize: 1
+      LaunchConfigurationName: { Ref: LaunchConfig }
+      VPCZoneIdentifier:
+        - "Fn::ImportValue": { Ref: SubnetAZ0ExportIdentifier }
+        - "Fn::ImportValue": { Ref: SubnetAZ1ExportIdentifier }
+
+Outputs:
+  SgId:
+    Value: { Ref: SecurityGroup }
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - "BastionSGIdentifier"
