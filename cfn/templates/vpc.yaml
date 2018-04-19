@@ -230,7 +230,7 @@ Resources:
         - { Ref: PublicRouteTable }
       PolicyDocument:
         Version: 2012-10-17
-        Statement:  ## As CURate needs to access customer buckets we cannot limit the resource but can limit the operations allowed i.e. no delete operations
+        Statement:  ## As CURate needs to access customer buckets we cannot limit the resource but can limit the operations allowed i.e. Delete only for our own bucket
           - Effect: Allow
             Principal: '*'
             Action:
@@ -240,6 +240,22 @@ Resources:
               - s3:ListObjects
               - s3:PutObject
             Resource: "*"
+          - Effect: Allow
+            Principal: '*'
+            Action:
+              - s3:DeleteObject
+            Resource:
+              - "Fn::Join":
+                - ""
+                - - "Fn::ImportValue":
+                      "Fn::Join":
+                        - "-"
+                        - - { Ref: ProjectName }
+                          - { Ref: EnvironmentName }
+                          - bucket
+                          - arn
+                  - "/*"
+            
 
 Outputs:
   VpcIdExport:
