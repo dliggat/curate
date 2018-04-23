@@ -30,6 +30,11 @@
     "UsePreviousValue": false
   },
   {
+    "ParameterKey": "LambdaHealthGroupIdenifier",
+    "ParameterValue": "curate-prod-LambdaSGIdentifier",
+    "UsePreviousValue": false
+  },
+  {
     "ParameterKey": "GitRepo",
     "ParameterValue": "https://github.com/dliggat/curate.git",
     "UsePreviousValue": false

@@ -28,5 +28,20 @@
     "ParameterKey": "MemorySize",
     "ParameterValue": "256",
     "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SubnetAZ0ExportIdentifier",
+    "ParameterValue": "curate-prod-PrivateSubnetAZ0",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SubnetAZ1ExportIdentifier",
+    "ParameterValue": "curate-prod-PrivateSubnetAZ1",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "VpcExportIdentifier",
+    "ParameterValue": "curate-prod-VpcId",
+    "UsePreviousValue": false
   }
 ]

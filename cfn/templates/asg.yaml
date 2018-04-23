@@ -23,6 +23,9 @@ Parameters:
   BastionSecurityGroupIdenifier:
     Type: String
 
+  LambdaHealthGroupIdenifier:
+    Type: String
+
   GitRepo:
     Type: String
 
@@ -257,6 +260,16 @@ Resources:
       IpProtocol: tcp
       FromPort: 22
       ToPort: 22
+
+  SecurityGroupHealthIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: { Ref: SecurityGroup }
+      SourceSecurityGroupId: 
+        "Fn::ImportValue": { Ref: LambdaHealthGroupIdenifier }
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
 
   LaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration

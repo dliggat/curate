@@ -28,6 +28,15 @@ Parameters:
     Type: Number
     Description: Memory for the function in MB
 
+  SubnetAZ0ExportIdentifier:
+    Type: String
+
+  SubnetAZ1ExportIdentifier:
+    Type: String
+  
+  VpcExportIdentifier:
+    Type: String
+
 Conditions:
   HasSchedule:
     "Fn::Not":
@@ -36,8 +45,29 @@ Conditions:
           - ""
 
 Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        "Fn::ImportValue": { Ref: VpcExportIdentifier }
+      GroupDescription:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - "sg"
+      Tags:
+        - Key: Name
+          Value:
+            "Fn::Join":
+              - "-"
+              - - { Ref: ProjectName }
+                - { Ref: EnvironmentName }
+                - "sg"
+
   LambdaFunction:
     Type: AWS::Lambda::Function
+    DependsOn: SecurityGroup
     Metadata:
       Comment:
         "Fn::Sub":
@@ -51,6 +81,7 @@ Resources:
               import boto3
               import json
               import logging
+              from botocore.vendored import requests
 
               logging.basicConfig()
               logger = logging.getLogger(__name__)
@@ -70,8 +101,23 @@ Resources:
                 }
               ]
 
+              def instanceHealthy(instance):
+                client = boto3.client('ec2')
+                response = client.describe_instances(
+                  InstanceIds=[instance]
+                )
+                i = response["Reservations"][0]["Instances"][0]
+                try:
+                  r = requests.get("http://{}/health".format(i["PrivateIpAddress"]))
+                except requests.exceptions.RequestException as e:
+                  logger.info("Instance Healthcheck failed: {}".format(e))
+                  return False
+                if r.status_code != 200:
+                  logger.info("Instance Healthcheck response: {}".format(r.status_code))
+                  return False
+                return True
+
               def publish_metric(value, metric_name, namespace='Custom', dimension=defaultDimension):
-                logger.info('Publishing to CloudWatch')
                 client = boto3.client('cloudwatch')
                 client.put_metric_data(
                   Namespace=namespace,
@@ -106,6 +152,13 @@ Resources:
                         instance_total += 1
                         if instance["ProtectedFromScaleIn"] == False and instance["LifecycleState"] == 'InService' and instance["HealthStatus"] == 'Healthy':
                           instance_idle += 1
+                        if instance["ProtectedFromScaleIn"] == True and not instanceHealthy(instance["InstanceId"]):
+                          logger.info("Removing instance proctection on {} - failed health check".format(instance["InstanceId"]))
+                          asg.set_instance_protection(
+                            InstanceIds=[instance["InstanceId"]],
+                            AutoScalingGroupName=asg_name,
+                            ProtectedFromScaleIn=False
+                          )
                     publish_metric(instance_idle, "NumberofInstancesIdle", "Curate", asgDimension)
                     publish_metric(int(rSQS["Attributes"]["ApproximateNumberOfMessages"]) - instance_total, "QueuetoAsgFactor", "Curate") 
 
@@ -143,6 +196,12 @@ Resources:
         Variables:
           EnvironmentName: { Ref: EnvironmentName }
           ProjectName: { Ref: ProjectName }
+      VpcConfig:
+        SubnetIds:
+          - "Fn::ImportValue": { Ref: SubnetAZ0ExportIdentifier }
+          - "Fn::ImportValue": { Ref: SubnetAZ1ExportIdentifier }
+        SecurityGroupIds:
+          - { Ref: SecurityGroup }
 
 
   LambdaFunctionExecutionRole:
@@ -201,6 +260,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - "autoscaling:DescribeAutoScalingGroups"
+                  - "autoscaling:SetInstanceProtection"
+                  - "ec2:DescribeInstances"
+                  - "ec2:DescribeNetworkInterfaces"
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:DeleteNetworkInterface"
                 Resource: "*"
 
 
@@ -242,3 +306,12 @@ Outputs:
     Value:
       "Fn::Sub": |
         aws lambda invoke --function-name ${LambdaFunction} /tmp/${LambdaFunction}-output.txt; cat /tmp/${LambdaFunction}-output.txt
+  SgId:
+    Value: { Ref: SecurityGroup }
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - "LambdaSGIdentifier"
