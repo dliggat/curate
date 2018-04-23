@@ -110,9 +110,10 @@ func getInstanceMetadata(sess *session.Session) map[string]interface{} {
 	return m
 }
 
-func getParams(queueUrl *string, topLevelDestPath *string) error {
+func getParams(queueUrl *string, topLevelDestPath *string, healthPort *string) error {
 	flag.StringVar(queueUrl, "sqsqueue", "", "SQS URL for processing")
 	flag.StringVar(topLevelDestPath, "destpathprefix", "parquet-cur", "Top level destination path")
+	flag.StringVar(healthPort, "healthport", "80", "health port to listen on")
 	flag.Parse()
 
 	if len(*queueUrl) < 1 {
@@ -284,8 +285,8 @@ func doLog(logger *cwlogger.Logger, m string) {
 
 func main() {
 	// Input parameters
-	var queueUrl, topLevelDestPath string
-	if err := getParams(&queueUrl, &topLevelDestPath); err != nil {
+	var queueUrl, topLevelDestPath, healthPort string
+	if err := getParams(&queueUrl, &topLevelDestPath, &healthPort); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -319,6 +320,15 @@ func main() {
 			doLog(logger, "couldnt find ASG for "+meta["instanceId"].(string))
 		}
 	}
+
+	// Setup process HTTP health check
+	go func() {
+		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, "healthy")
+		})
+		log.Fatal(http.ListenAndServe(":"+healthPort, nil))
+		doLog(logger, "Listening on Port "+healthPort+" for health check")
+	}()
 
 	// create sqs handler
 	svc := sqs.New(sess)
