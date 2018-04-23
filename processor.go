@@ -326,8 +326,8 @@ func main() {
 		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "healthy")
 		})
-		log.Fatal(http.ListenAndServe(":"+healthPort, nil))
 		doLog(logger, "Listening on Port "+healthPort+" for health check")
+		log.Fatal(http.ListenAndServe(":"+healthPort, nil))
 	}()
 
 	// create sqs handler
