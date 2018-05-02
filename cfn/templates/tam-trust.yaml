@@ -58,10 +58,7 @@ Resources:
                   - "*"
               - Effect: Allow
                 Action:
-                  - s3:GetBucketLocation
                   - s3:GetObject
-                  - s3:ListBucket
-                  - s3:ListBucketMultipartUploads
                   - s3:ListMultipartUploadParts
                   - s3:AbortMultipartUpload
                   - s3:PutObject
@@ -79,16 +76,19 @@ Resources:
                 Action:
                   - s3:GetBucketLocation
                   - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                Resource: 
+                  "Fn::Join":
+                      - ""
+                      - - "arn:aws:s3:::aws-athena-query-results-"
+                        - Ref: "AWS::AccountId"
+                        - "-"
+                        - Ref: "AWS::Region"
+              - Effect: Allow
+                Action:
                   - s3:GetObject
                   - s3:ListObjects
                 Resource:
-                  - "Fn::ImportValue":
-                      "Fn::Join":
-                        - "-"
-                        - - { Ref: ProjectName }
-                          - { Ref: EnvironmentName }
-                          - bucket
-                          - arn
                   - "Fn::Join":
                     - ""
                     - - "Fn::ImportValue":
@@ -101,6 +101,20 @@ Resources:
                       - "/parquet-cur/"
                       - Ref: DatabaseName
                       - "/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource: 
+                  - "Fn::Join":
+                    - ""
+                    - - "Fn::ImportValue":
+                          "Fn::Join":
+                            - "-"
+                            - - { Ref: ProjectName }
+                              - { Ref: EnvironmentName }
+                              - bucket
+                              - arn
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
