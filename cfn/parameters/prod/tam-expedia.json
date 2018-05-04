@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "prod",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "DatabaseName",
+    "ParameterValue": "expedia",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AWSAccounts",
+    "ParameterValue": "009134365347,109576132273,732179643951,029742975760,841148949793,888418837284",
+    "UsePreviousValue": false
+  }
+]

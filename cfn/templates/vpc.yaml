@@ -255,8 +255,27 @@ Resources:
                           - bucket
                           - arn
                   - "/*"
-            
 
+  SecurityGroupLambdaVPC:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn: Vpc
+    Properties:
+      VpcId: { Ref: Vpc }
+      GroupDescription:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - "sg"
+      Tags:
+        - Key: Name
+          Value:
+            "Fn::Join":
+              - "-"
+              - - { Ref: ProjectName }
+                - { Ref: EnvironmentName }
+                - "sg"
+          
 Outputs:
   VpcIdExport:
     Value: { Ref: Vpc }
@@ -317,5 +336,14 @@ Outputs:
           - - { Ref: ProjectName }
             - { Ref: EnvironmentName }
             - NatGatewayAZ0
-
+ 
+  SecurityGroupLambdaVPCExport:
+    Value: { Ref: SecurityGroupLambdaVPC }
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - "LambdaVPCSGIdentifier"
 

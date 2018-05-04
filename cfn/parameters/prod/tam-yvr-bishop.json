@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "prod",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "DatabaseName",
+    "ParameterValue": "yvr_bishop",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AWSAccounts",
+    "ParameterValue": "824550351281,658896902634,023062833630",
+    "UsePreviousValue": false
+  }
+]

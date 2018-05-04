@@ -1,0 +1,47 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "dev",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "VpcExportIdentifier",
+    "ParameterValue": "curate-dev-VpcId",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SubnetAZ0ExportIdentifier",
+    "ParameterValue": "curate-dev-PublicSubnetAZ0",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SubnetAZ1ExportIdentifier",
+    "ParameterValue": "curate-dev-PublicSubnetAZ1",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "KeypairName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AmiId",
+    "ParameterValue": "ami-15e9c770",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "t2.micro",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SpotPrice",
+    "ParameterValue": "0.10",
+    "UsePreviousValue": false
+  }
+]

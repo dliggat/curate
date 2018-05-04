@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "prod",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "DatabaseName",
+    "ParameterValue": "gru_timmy",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AWSAccounts",
+    "ParameterValue": "031368506663,737147542028",
+    "UsePreviousValue": false
+  }
+]

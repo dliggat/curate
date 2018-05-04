@@ -1,0 +1,77 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "prod",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "VpcExportIdentifier",
+    "ParameterValue": "curate-prod-VpcId",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SubnetAZ0ExportIdentifier",
+    "ParameterValue": "curate-prod-PrivateSubnetAZ0",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SubnetAZ1ExportIdentifier",
+    "ParameterValue": "curate-prod-PrivateSubnetAZ1",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "BastionSecurityGroupIdenifier",
+    "ParameterValue": "curate-prod-BastionSGIdentifier",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "LambdaHealthGroupIdenifier",
+    "ParameterValue": "curate-prod-LambdaVPCSGIdentifier",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "GitRepo",
+    "ParameterValue": "https://github.com/dliggat/curate.git",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "KeypairName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AmiId",
+    "ParameterValue": "ami-55ef662f",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "c5.2xlarge",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SpotPrice",
+    "ParameterValue": "0.34",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AsgCooldown",
+    "ParameterValue": "30",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AsgWarmup",
+    "ParameterValue": "60",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "BlockVolumeSize",
+    "ParameterValue": "20",
+    "UsePreviousValue": false
+  }
+]

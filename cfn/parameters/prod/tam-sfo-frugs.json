@@ -11,12 +11,12 @@
   },
   {
     "ParameterKey": "DatabaseName",
-    "ParameterValue": "yvr_bishop",
+    "ParameterValue": "sfo_frugs",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "AWSAccounts",
-    "ParameterValue": "824550351281,658896902634",
+    "ParameterValue": "540043657708,928980401582",
     "UsePreviousValue": false
   }
 ]

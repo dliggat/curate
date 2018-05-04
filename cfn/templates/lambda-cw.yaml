@@ -37,6 +37,9 @@ Parameters:
   VpcExportIdentifier:
     Type: String
 
+  LambdaVPCSecurityGroupExportIdenifier:
+    Type: String
+
 Conditions:
   HasSchedule:
     "Fn::Not":
@@ -45,29 +48,8 @@ Conditions:
           - ""
 
 Resources:
-  SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      VpcId:
-        "Fn::ImportValue": { Ref: VpcExportIdentifier }
-      GroupDescription:
-        "Fn::Join":
-          - "-"
-          - - { Ref: ProjectName }
-            - { Ref: EnvironmentName }
-            - "sg"
-      Tags:
-        - Key: Name
-          Value:
-            "Fn::Join":
-              - "-"
-              - - { Ref: ProjectName }
-                - { Ref: EnvironmentName }
-                - "sg"
-
   LambdaFunction:
     Type: AWS::Lambda::Function
-    DependsOn: SecurityGroup
     Metadata:
       Comment:
         "Fn::Sub":
@@ -201,7 +183,7 @@ Resources:
           - "Fn::ImportValue": { Ref: SubnetAZ0ExportIdentifier }
           - "Fn::ImportValue": { Ref: SubnetAZ1ExportIdentifier }
         SecurityGroupIds:
-          - { Ref: SecurityGroup }
+          - "Fn::ImportValue": { Ref: LambdaVPCSecurityGroupExportIdenifier }
 
 
   LambdaFunctionExecutionRole:
@@ -306,12 +288,3 @@ Outputs:
     Value:
       "Fn::Sub": |
         aws lambda invoke --function-name ${LambdaFunction} /tmp/${LambdaFunction}-output.txt; cat /tmp/${LambdaFunction}-output.txt
-  SgId:
-    Value: { Ref: SecurityGroup }
-    Export:
-      Name:
-        "Fn::Join":
-          - "-"
-          - - { Ref: ProjectName }
-            - { Ref: EnvironmentName }
-            - "LambdaSGIdentifier"

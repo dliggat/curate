@@ -1,0 +1,52 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "dev",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "ScheduleExpression",
+    "ParameterValue": "rate(6 hours)",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "Runtime",
+    "ParameterValue": "python2.7",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "Timeout",
+    "ParameterValue": "60",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "MemorySize",
+    "ParameterValue": "256",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "VisibilityTimeout",
+    "ParameterValue": "7200",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "MessageRetentionPeriod",
+    "ParameterValue": "86400",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "MessageRedriveCount",
+    "ParameterValue": "3",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "TableSuffix",
+    "ParameterValue": "config",
+    "UsePreviousValue": false
+  }
+]

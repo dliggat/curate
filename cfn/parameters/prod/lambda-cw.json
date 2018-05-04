@@ -43,5 +43,10 @@
     "ParameterKey": "VpcExportIdentifier",
     "ParameterValue": "curate-prod-VpcId",
     "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "LambdaVPCSecurityGroupExportIdenifier",
+    "ParameterValue": "curate-prod-LambdaVPCSGIdentifier",
+    "UsePreviousValue": false
   }
 ]

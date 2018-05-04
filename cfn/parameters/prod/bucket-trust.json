@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "TrustedAwsAccountId",
+    "ParameterValue": "127476143006",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "TrustedExternalID",
+    "ParameterValue": "cur-access",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "BillingBucketName",
+    "ParameterValue": "<enter_bucket_here>",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "ReportPath",
+    "ParameterValue": "<enter_report_path_here>",
+    "UsePreviousValue": false
+  }
+]

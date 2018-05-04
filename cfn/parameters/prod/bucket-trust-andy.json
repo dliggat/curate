@@ -1,0 +1,32 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "DelegateTrustBillingBucket",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "env",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "TrustedAwsAccountId",
+    "ParameterValue": "127476143006",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "TrustedExternalID",
+    "ParameterValue": "cur-access",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "BillingBucketName",
+    "ParameterValue": "andrfase-dbr",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "ReportPath",
+    "ParameterValue": "/billing-report/billing-report",
+    "UsePreviousValue": false
+  }
+]

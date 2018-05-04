@@ -409,6 +409,7 @@ Resources:
 
   ScaleInAlarm:
     Type: AWS::CloudWatch::Alarm
+    DependsOn: Asg
     Properties:
       EvaluationPeriods: { Ref: AsgScaleInEvaluationPeriods }
       Statistic: Average
@@ -420,14 +421,7 @@ Resources:
       Namespace: Curate
       Dimensions:
         - Name: AsgName
-          Value:
-            "Fn::ImportValue":
-              "Fn::Join":
-                - "-"
-                - - { Ref: ProjectName }
-                  - { Ref: EnvironmentName }
-                  - asg 
-                  - name
+          Value: { Ref: Asg }
       ComparisonOperator: GreaterThanOrEqualToThreshold
       MetricName: NumberofInstancesIdle
 

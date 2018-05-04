@@ -6,32 +6,32 @@
   },
   {
     "ParameterKey": "EnvironmentName",
-    "ParameterValue": "prod",
+    "ParameterValue": "dev",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "VpcExportIdentifier",
-    "ParameterValue": "curate-prod-VpcId",
+    "ParameterValue": "curate-dev-VpcId",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "SubnetAZ0ExportIdentifier",
-    "ParameterValue": "curate-prod-PrivateSubnetAZ0",
+    "ParameterValue": "curate-dev-PrivateSubnetAZ0",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "SubnetAZ1ExportIdentifier",
-    "ParameterValue": "curate-prod-PrivateSubnetAZ1",
+    "ParameterValue": "curate-dev-PrivateSubnetAZ1",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "BastionSecurityGroupIdenifier",
-    "ParameterValue": "curate-prod-BastionSGIdentifier",
+    "ParameterValue": "curate-dev-BastionSGIdentifier",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "LambdaHealthGroupIdenifier",
-    "ParameterValue": "curate-prod-LambdaSGIdentifier",
+    "ParameterValue": "curate-dev-LambdaVPCSGIdentifier",
     "UsePreviousValue": false
   },
   {
@@ -46,7 +46,7 @@
   },
   {
     "ParameterKey": "AmiId",
-    "ParameterValue": "ami-55ef662f",
+    "ParameterValue": "ami-15e9c770",
     "UsePreviousValue": false
   },
   {
