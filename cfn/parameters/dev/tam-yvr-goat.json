@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "dev",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "DatabaseName",
+    "ParameterValue": "yvr_goat",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AWSAccounts",
+    "ParameterValue": "433468561249",
+    "UsePreviousValue": false
+  }
+]

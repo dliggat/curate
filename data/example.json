@@ -1,26 +1,29 @@
 {
   "cur_report_descriptor": {
-    "S": "customer_name"
+    "S": "andrfase"
   },
   "cur_database": {
-    "S": "YVR"
+    "S": "yvr_goat"
   },
   "source_bucket": {
-    "S": "customer_bucket"
+    "S": "cur-billing-report"
   },
   "destination_bucket": {
-    "S": "curate-prod-cur"
+    "S": "curate-dev-cur"
   },
   "report_path": {
-    "S": "/path/to/report"
+    "S": "cur-billing-path/cur-billing-report"
   },
   "report_name": {
-    "S": "name"
+    "S": "cur-billing-report"
   },
   "source_role_arn": {
-    "S": ""
+    "S": "arn:aws:iam::433468561249:role/aws-cur-tam-trust-CrossAccountRole-1I5RKFCV85NZR	"
   },
   "source_external_id": {
-    "S": ""
+    "S": "cur-access"
+  },
+  "source_external_id": {
+    "S": "cur-access"
   }
 }

@@ -29,6 +29,9 @@ Parameters:
   GitRepo:
     Type: String
 
+  GitBranch:
+    Type: String
+
   KeypairName:
     Type: AWS::EC2::KeyPair::KeyName
 
@@ -295,9 +298,11 @@ Resources:
               #!/bin/bash
               yum install -y git
               git clone ${git_repo} repo
-              cd repo
+              cd repo              
+              git checkout ${git_branch}
               ./bin/processor --sqsqueue ${sqs_queue}
             - git_repo: { Ref: GitRepo }
+              git_branch: { Ref: GitBranch }
               sqs_queue:
                 "Fn::ImportValue":
                   "Fn::Join":
@@ -445,3 +450,15 @@ Outputs:
             - { Ref: EnvironmentName }
             - "asg"
             - "name"
+  AsgInstancePolicy:
+    Value:
+     "Fn::GetAtt": [IamRole, Arn]
+    Export:
+      Name:
+        "Fn::Join":
+          - "-"
+          - - { Ref: ProjectName }
+            - { Ref: EnvironmentName }
+            - "asg"
+            - "instanceprofile"
+            - "arn"

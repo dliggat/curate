@@ -169,10 +169,10 @@ func sendQuery(svc *athena.Athena, db string, sql string, account string, region
 	return nil
 }
 
-func createAthenaTable(sess *session.Session, tableprefix string, database string, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}, curDate string) error {
+func createAthenaTable(sess *session.Session, m Message, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}, curDate string) error {
 	svcAthena := athena.New(sess)
 
-	sql := "CREATE DATABASE IF NOT EXISTS `" + database + "`"
+	sql := "CREATE DATABASE IF NOT EXISTS `" + m.CurDatabase + "`"
 	if err := sendQuery(svcAthena, "default", sql, meta["accountId"].(string), meta["region"].(string)); err != nil {
 		return errors.New("Could not create Athena Database, error: " + err.Error())
 	}
@@ -182,10 +182,14 @@ func createAthenaTable(sess *session.Session, tableprefix string, database strin
 		cols += "`" + columns[col].Name + "` " + columns[col].Type + ",\n"
 	}
 	cols = cols[:strings.LastIndex(cols, ",")]
-	table := tableprefix + "_" + curDate
+	table := m.CurReportDescriptor + "_" + curDate
 
 	sql = "CREATE EXTERNAL TABLE IF NOT EXISTS `" + table + "` (" + cols + ") STORED AS PARQUET LOCATION '" + s3path + "'"
-	if err := sendQuery(svcAthena, database, sql, meta["accountId"].(string), meta["region"].(string)); err != nil {
+	if len(m.DestinationKMSKeyArn) > 0 {
+		sql += " TBLPROPERTIES ('has_encrypted_data'='true')"
+	}
+
+	if err := sendQuery(svcAthena, m.CurDatabase, sql, meta["accountId"].(string), meta["region"].(string)); err != nil {
 		return errors.New("Could not create Athena Database, error: " + err.Error())
 	}
 	return nil
@@ -201,6 +205,7 @@ type Message struct {
 	SourceExternalId      string `json:"source_external_id"`
 	DestinationRoleArn    string `json:"destination_role_arn"`
 	DestinationExternalId string `json:"destination_external_id"`
+	DestinationKMSKeyArn  string `json:"destination_kms_key_arn"`
 	CurDatabase           string `json:"cur_database"`
 	Date                  string `json:date`
 }
@@ -241,6 +246,9 @@ func processCUR(m Message, topLevelDestPath string, logger *cwlogger.Logger) ([]
 	}
 	if len(m.DestinationRoleArn) > 1 {
 		cc.SetSourceRole(m.DestinationRoleArn, m.DestinationExternalId)
+	}
+	if len(m.DestinationKMSKeyArn) > 1 {
+		cc.SetDestKMSKey(m.DestinationKMSKeyArn)
 	}
 
 	// Check current months manifest exists
@@ -381,7 +389,7 @@ func main() {
 					if err != nil {
 						doLog(logger, "Failed to process CUR conversion for report: "+m.CurReportDescriptor+", error: "+err.Error())
 					} else {
-						if err = createAthenaTable(sess, m.CurReportDescriptor, m.CurDatabase, columns, s3path, meta, curDate); err != nil {
+						if err = createAthenaTable(sess, m, columns, s3path, meta, curDate); err != nil {
 							doLog(logger, "Falied to create/update Athena tables, report: "+m.CurReportDescriptor+" error: "+err.Error())
 						} else {
 							// send back success of processing messages

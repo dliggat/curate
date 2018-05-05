@@ -122,6 +122,71 @@ Resources:
             Action: "sts:AssumeRole"
             Principal:
               AWS: { Ref: AWSAccounts }
+      
+  KmsDataKeyAlias:
+    Type: "AWS::KMS::Alias"
+    DependsOn: KmsDataKey
+    Properties:
+      AliasName:
+        "Fn::Sub": "alias/${ProjectName}-${EnvironmentName}-${DatabaseName}-data-key"
+      TargetKeyId: { Ref: KmsDataKey }
+      
+  KmsDataKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: 
+        "Fn::Sub": "KMS Data key for ${ProjectName}-${EnvironmentName}-${DatabaseName}"
+      Enabled: true
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "KeyPolicyForKMS"
+        Statement:
+          - Sid: "CURate Admin Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/Admin"
+            Action:
+              - kms:Create*
+              - kms:Describe*
+              - kms:Enable*
+              - kms:List*
+              - kms:Put*
+              - kms:Update*
+              - kms:Revoke*
+              - kms:Disable*
+              - kms:Get*
+              - kms:Delete*
+              - kms:TagResource
+              - kms:UntagResource
+              - kms:ScheduleKeyDeletion
+              - kms:CancelKeyDeletion
+            Resource: "*"
+          - Sid: "CURate Instance Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                "Fn::ImportValue":
+                  "Fn::Join":
+                    - "-"
+                    - - { Ref: ProjectName }
+                      - { Ref: EnvironmentName }
+                      - "asg"
+                      - "instanceprofile"
+                      - "arn"
+            Action:
+              - kms:Encrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+          - Sid: "CURate TAM Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                "Fn::GetAtt": [CrossAccountRole, Arn]
+            Action:
+              - kms:Decrypt
+            Resource: "*"
 
 
 Outputs:
@@ -141,3 +206,8 @@ Outputs:
           - { Ref: "AWS::AccountId" }
           - "&roleName="
           - { Ref: CrossAccountRole }
+  KmsDataKeyArn:
+    Value:
+      "Fn::GetAtt":
+        - KmsDataKey
+        - Arn
