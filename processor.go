@@ -110,10 +110,11 @@ func getInstanceMetadata(sess *session.Session) map[string]interface{} {
 	return m
 }
 
-func getParams(queueUrl *string, topLevelDestPath *string, healthPort *string) error {
+func getParams(queueUrl *string, topLevelDestPath *string, scratchDir *string, healthPort *string) error {
 	flag.StringVar(queueUrl, "sqsqueue", "", "SQS URL for processing")
 	flag.StringVar(topLevelDestPath, "destpathprefix", "parquet-cur", "Top level destination path")
-	flag.StringVar(healthPort, "healthport", "80", "health port to listen on")
+	flag.StringVar(healthPort, "healthport", "80", "Health port to listen on")
+	flag.StringVar(scratchDir, "tmp", "/tmp", "Directory to store temporary files using conversion")
 	flag.Parse()
 
 	if len(*queueUrl) < 1 {
@@ -210,7 +211,7 @@ type Message struct {
 	Date                  string `json:date`
 }
 
-func processCUR(m Message, topLevelDestPath string, logger *cwlogger.Logger) ([]curconvert.CurColumn, string, string, error) {
+func processCUR(m Message, topLevelDestPath string, scratchDir string, logger *cwlogger.Logger) ([]curconvert.CurColumn, string, string, error) {
 	if len(m.SourceBucket) < 1 {
 		return nil, "", "", errors.New("Must supply a source bucket")
 	}
@@ -249,6 +250,9 @@ func processCUR(m Message, topLevelDestPath string, logger *cwlogger.Logger) ([]
 	}
 	if len(m.DestinationKMSKeyArn) > 1 {
 		cc.SetDestKMSKey(m.DestinationKMSKeyArn)
+	}
+	if len(scratchDir) > 0 {
+		cc.SetTmpLocation(scratchDir)
 	}
 
 	// Check current months manifest exists
@@ -293,8 +297,8 @@ func doLog(logger *cwlogger.Logger, m string) {
 
 func main() {
 	// Input parameters
-	var queueUrl, topLevelDestPath, healthPort string
-	if err := getParams(&queueUrl, &topLevelDestPath, &healthPort); err != nil {
+	var queueUrl, topLevelDestPath, scratchDir, healthPort string
+	if err := getParams(&queueUrl, &topLevelDestPath, &scratchDir, &healthPort); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -385,7 +389,7 @@ func main() {
 					if len(m.CurDatabase) < 1 {
 						m.CurDatabase = "cur"
 					}
-					columns, s3path, curDate, err := processCUR(m, topLevelDestPath, logger)
+					columns, s3path, curDate, err := processCUR(m, topLevelDestPath, scratchDir, logger)
 					if err != nil {
 						doLog(logger, "Failed to process CUR conversion for report: "+m.CurReportDescriptor+", error: "+err.Error())
 					} else {

@@ -42,15 +42,25 @@ Parameters:
     Type: String
     Description: The size of the instance
 
-  BlockVolumeSize: 
+  BlockVolumeSizeRoot: 
     Type: String
     Description: The size of the root block device volume in GBs
-    Default: 20
+    Default: 5
 
-  BlockDeviceName:
+  BlockDeviceNameRoot:
     Type: String
     Description: The block device mapping name, see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nvme-ebs-volumes.html
     Default: "/dev/xvda"
+
+  BlockVolumeSizeScratch: 
+    Type: String
+    Description: The size of the root block device volume in GBs
+    Default: 10
+
+  BlockDeviceNameScratch:
+    Type: String
+    Description: The block device mapping name, see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nvme-ebs-volumes.html
+    Default: "/dev/xvdb"
 
   SpotPrice:
     Type: String
@@ -286,21 +296,30 @@ Resources:
         - { Ref: SecurityGroup }
       EbsOptimized: "true"
       BlockDeviceMappings:
-        - DeviceName: { Ref: BlockDeviceName } 
+        - DeviceName: { Ref: BlockDeviceNameRoot } 
           Ebs: 
-            VolumeSize: { Ref: BlockVolumeSize }
+            VolumeSize: { Ref: BlockVolumeSizeRoot }
             VolumeType: "gp2"
             DeleteOnTermination: "true"
+        - DeviceName: { Ref: BlockDeviceNameScratch } 
+          Ebs: 
+            VolumeSize: { Ref: BlockVolumeSizeScratch }
+            VolumeType: "gp2"
+            DeleteOnTermination: "true"
+            Encrypted: "true"
       UserData:
         "Fn::Base64":
           "Fn::Sub":
             - |-
               #!/bin/bash
+              mkdir /scratch
+              mkfs -t ext4 ${scratch_mount}
+              mount -t ext4 -o nosuid -w -m 600 ${scratch_mount} /scratch
               yum install -y git
               git clone ${git_repo} repo
               cd repo              
               git checkout ${git_branch}
-              ./bin/processor --sqsqueue ${sqs_queue}
+              ./bin/processor --sqsqueue ${sqs_queue} --tmp /scratch
             - git_repo: { Ref: GitRepo }
               git_branch: { Ref: GitBranch }
               sqs_queue:
@@ -311,7 +330,7 @@ Resources:
                       - { Ref: EnvironmentName }
                       - queue
                       - url
-
+              scratch_mount: { Ref: BlockDeviceNameScratch }
 
   Asg:
     Type: AWS::AutoScaling::AutoScalingGroup
