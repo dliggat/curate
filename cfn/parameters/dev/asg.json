@@ -75,7 +75,12 @@
     "UsePreviousValue": false
   },
   {
-    "ParameterKey": "BlockVolumeSize",
+    "ParameterKey": "BlockVolumeSizeRoot",
+    "ParameterValue": "8",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "BlockVolumeSizeScratch",
     "ParameterValue": "20",
     "UsePreviousValue": false
   }
