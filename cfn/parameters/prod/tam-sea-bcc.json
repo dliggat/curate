@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "curate",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "prod",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "DatabaseName",
+    "ParameterValue": "sea_bcc",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "AWSAccounts",
+    "ParameterValue": "910267445295",
+    "UsePreviousValue": false
+  }
+]
