@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -48,7 +47,7 @@ func (ip *instanceProtection) set(state bool) error {
 
 		for i := 1; i < 6; i++ {
 			if lastError != nil {
-				time.Sleep(time.Second * time.Duration(rand.Intn(5*i)))
+				time.Sleep(time.Second * time.Duration(5*i))
 			}
 			_, lastError = svc.SetInstanceProtection(input)
 			if lastError == nil {
@@ -78,6 +77,26 @@ func getASGForInstance(sess *session.Session, instanceID string) (string, error)
 	}
 	asgName := resp.AutoScalingInstances[0].AutoScalingGroupName
 	return *asgName, nil
+}
+
+func waitForASGStatus(sess *session.Session, instanceID string, state string) error {
+	svc := autoscaling.New(sess)
+	for i := 1; i < 6; i++ {
+		resp, err := svc.DescribeAutoScalingInstances(
+			&autoscaling.DescribeAutoScalingInstancesInput{
+				InstanceIds: []*string{
+					aws.String(instanceID),
+				},
+				MaxRecords: aws.Int64(1),
+			})
+		if err == nil && len(resp.AutoScalingInstances) > 0 {
+			if *resp.AutoScalingInstances[0].LifecycleState == state {
+				return nil
+			}
+		}
+		time.Sleep(time.Second * time.Duration(5*i))
+	}
+	return fmt.Errorf("timeout waiting for instance %s to reach %s state", instanceID, state)
 }
 
 func getInstanceMetadata(sess *session.Session) map[string]interface{} {
@@ -362,6 +381,11 @@ func main() {
 			asgName:    asgName,
 			state:      false,
 			s:          make(chan bool, 1),
+		}
+		// wait for InService State
+		err := waitForASGStatus(sess, meta["instanceId"].(string), "InService")
+		if err != nil {
+			log.Fatal("Timeout waiting for instance to move into service " + err.Error())
 		}
 	}
 
