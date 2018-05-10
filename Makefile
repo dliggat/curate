@@ -53,5 +53,8 @@ build:
 put-ddb:
 	aws dynamodb put-item --table-name curate-prod-config --item file://data/$(DATA).json
 
+put-ddb-dev:
+	aws dynamodb put-item --table-name curate-dev-config --item file://data/$(DATA).json
+
 add-job:
 	aws sqs send-message --queue-url $(QUEUEURL) --message-body '${JSON}'

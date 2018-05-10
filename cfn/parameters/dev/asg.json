@@ -40,6 +40,11 @@
     "UsePreviousValue": false
   },
   {
+    "ParameterKey": "GitBranch",
+    "ParameterValue": "feature/csekms",
+    "UsePreviousValue": false
+  },
+  {
     "ParameterKey": "KeypairName",
     "ParameterValue": "curate",
     "UsePreviousValue": false
@@ -70,7 +75,12 @@
     "UsePreviousValue": false
   },
   {
-    "ParameterKey": "BlockVolumeSize",
+    "ParameterKey": "BlockVolumeSizeRoot",
+    "ParameterValue": "8",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "BlockVolumeSizeScratch",
     "ParameterValue": "20",
     "UsePreviousValue": false
   }

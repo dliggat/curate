@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -48,7 +47,7 @@ func (ip *instanceProtection) set(state bool) error {
 
 		for i := 1; i < 6; i++ {
 			if lastError != nil {
-				time.Sleep(time.Second * time.Duration(rand.Intn(5*i)))
+				time.Sleep(time.Second * time.Duration(5*i))
 			}
 			_, lastError = svc.SetInstanceProtection(input)
 			if lastError == nil {
@@ -63,21 +62,40 @@ func (ip *instanceProtection) set(state bool) error {
 
 func getASGForInstance(sess *session.Session, instanceID string) (string, error) {
 	svc := autoscaling.New(sess)
-	resp, err := svc.DescribeAutoScalingInstances(
-		&autoscaling.DescribeAutoScalingInstancesInput{
-			InstanceIds: []*string{
-				aws.String(instanceID),
-			},
-			MaxRecords: aws.Int64(1),
-		})
-	if err != nil {
-		return "", err
+	for i := 1; i < 6; i++ {
+		resp, err := svc.DescribeAutoScalingInstances(
+			&autoscaling.DescribeAutoScalingInstancesInput{
+				InstanceIds: []*string{
+					aws.String(instanceID),
+				},
+				MaxRecords: aws.Int64(1),
+			})
+		if err == nil && len(resp.AutoScalingInstances) > 0 && len(*resp.AutoScalingInstances[0].AutoScalingGroupName) > 0 {
+			return *resp.AutoScalingInstances[0].AutoScalingGroupName, nil
+		}
+		time.Sleep(time.Second * time.Duration(5*i))
 	}
-	if len(resp.AutoScalingInstances) < 1 {
-		return "", err
+	return "", fmt.Errorf("Failed to fetch ASG Name for %s", instanceID)
+}
+
+func waitForASGStatus(sess *session.Session, instanceID string, state string) error {
+	svc := autoscaling.New(sess)
+	for i := 1; i < 6; i++ {
+		resp, err := svc.DescribeAutoScalingInstances(
+			&autoscaling.DescribeAutoScalingInstancesInput{
+				InstanceIds: []*string{
+					aws.String(instanceID),
+				},
+				MaxRecords: aws.Int64(1),
+			})
+		if err == nil && len(resp.AutoScalingInstances) > 0 {
+			if *resp.AutoScalingInstances[0].LifecycleState == state {
+				return nil
+			}
+		}
+		time.Sleep(time.Second * time.Duration(5*i))
 	}
-	asgName := resp.AutoScalingInstances[0].AutoScalingGroupName
-	return *asgName, nil
+	return fmt.Errorf("timeout waiting for instance %s to reach %s state", instanceID, state)
 }
 
 func getInstanceMetadata(sess *session.Session) map[string]interface{} {
@@ -110,10 +128,11 @@ func getInstanceMetadata(sess *session.Session) map[string]interface{} {
 	return m
 }
 
-func getParams(queueUrl *string, topLevelDestPath *string, healthPort *string) error {
+func getParams(queueUrl *string, topLevelDestPath *string, scratchDir *string, healthPort *string) error {
 	flag.StringVar(queueUrl, "sqsqueue", "", "SQS URL for processing")
 	flag.StringVar(topLevelDestPath, "destpathprefix", "parquet-cur", "Top level destination path")
-	flag.StringVar(healthPort, "healthport", "80", "health port to listen on")
+	flag.StringVar(healthPort, "healthport", "80", "Health port to listen on")
+	flag.StringVar(scratchDir, "tmp", "/tmp", "Directory to store temporary files using conversion")
 	flag.Parse()
 
 	if len(*queueUrl) < 1 {
@@ -169,10 +188,10 @@ func sendQuery(svc *athena.Athena, db string, sql string, account string, region
 	return nil
 }
 
-func createAthenaTable(sess *session.Session, tableprefix string, database string, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}, curDate string) error {
+func createAthenaTable(sess *session.Session, m Message, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}, curDate string) error {
 	svcAthena := athena.New(sess)
 
-	sql := "CREATE DATABASE IF NOT EXISTS `" + database + "`"
+	sql := "CREATE DATABASE IF NOT EXISTS `" + m.CurDatabase + "`"
 	if err := sendQuery(svcAthena, "default", sql, meta["accountId"].(string), meta["region"].(string)); err != nil {
 		return errors.New("Could not create Athena Database, error: " + err.Error())
 	}
@@ -182,10 +201,14 @@ func createAthenaTable(sess *session.Session, tableprefix string, database strin
 		cols += "`" + columns[col].Name + "` " + columns[col].Type + ",\n"
 	}
 	cols = cols[:strings.LastIndex(cols, ",")]
-	table := tableprefix + "_" + curDate
+	table := m.CurReportDescriptor + "_" + curDate
 
 	sql = "CREATE EXTERNAL TABLE IF NOT EXISTS `" + table + "` (" + cols + ") STORED AS PARQUET LOCATION '" + s3path + "'"
-	if err := sendQuery(svcAthena, database, sql, meta["accountId"].(string), meta["region"].(string)); err != nil {
+	if len(m.DestinationKMSKeyArn) > 0 {
+		sql += " TBLPROPERTIES ('has_encrypted_data'='true')"
+	}
+
+	if err := sendQuery(svcAthena, m.CurDatabase, sql, meta["accountId"].(string), meta["region"].(string)); err != nil {
 		return errors.New("Could not create Athena Database, error: " + err.Error())
 	}
 	return nil
@@ -201,11 +224,12 @@ type Message struct {
 	SourceExternalId      string `json:"source_external_id"`
 	DestinationRoleArn    string `json:"destination_role_arn"`
 	DestinationExternalId string `json:"destination_external_id"`
+	DestinationKMSKeyArn  string `json:"destination_kms_key_arn"`
 	CurDatabase           string `json:"cur_database"`
 	Date                  string `json:date`
 }
 
-func processCUR(m Message, topLevelDestPath string, logger *cwlogger.Logger) ([]curconvert.CurColumn, string, string, error) {
+func processCUR(m Message, topLevelDestPath string, scratchDir string, logger *cwlogger.Logger) ([]curconvert.CurColumn, string, string, error) {
 	if len(m.SourceBucket) < 1 {
 		return nil, "", "", errors.New("Must supply a source bucket")
 	}
@@ -241,6 +265,12 @@ func processCUR(m Message, topLevelDestPath string, logger *cwlogger.Logger) ([]
 	}
 	if len(m.DestinationRoleArn) > 1 {
 		cc.SetSourceRole(m.DestinationRoleArn, m.DestinationExternalId)
+	}
+	if len(m.DestinationKMSKeyArn) > 1 {
+		cc.SetDestKMSKey(m.DestinationKMSKeyArn)
+	}
+	if len(scratchDir) > 0 {
+		cc.SetTmpLocation(scratchDir)
 	}
 
 	// Check current months manifest exists
@@ -285,8 +315,8 @@ func doLog(logger *cwlogger.Logger, m string) {
 
 func main() {
 	// Input parameters
-	var queueUrl, topLevelDestPath, healthPort string
-	if err := getParams(&queueUrl, &topLevelDestPath, &healthPort); err != nil {
+	var queueUrl, topLevelDestPath, scratchDir, healthPort string
+	if err := getParams(&queueUrl, &topLevelDestPath, &scratchDir, &healthPort); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -313,11 +343,13 @@ func main() {
 			log.Fatal("Could not initalize Cloudwatch logger: " + err.Error())
 		}
 		defer logger.Close()
-		doLog(logger, "curate running on "+meta["instanceId"].(string)+" in "+meta["availabilityZone"].(string))
+		doLog(logger, "curate runnning on "+meta["instanceId"].(string)+" in "+meta["availabilityZone"].(string))
 
 		asgName, err = getASGForInstance(sess, meta["instanceId"].(string))
 		if err != nil {
-			doLog(logger, "couldnt find ASG for "+meta["instanceId"].(string))
+			doLog(logger, "couldnt find ASG for "+meta["instanceId"].(string)+"in "+meta["availabilityZone"].(string)+" Error: "+err.Error())
+		} else {
+			doLog(logger, "curate running on "+meta["instanceId"].(string)+" witin "+asgName+" in "+meta["availabilityZone"].(string))
 		}
 	}
 
@@ -351,6 +383,11 @@ func main() {
 			state:      false,
 			s:          make(chan bool, 1),
 		}
+		// wait for InService State
+		err := waitForASGStatus(sess, meta["instanceId"].(string), "InService")
+		if err != nil {
+			log.Fatal("Timeout waiting for instance to move into service " + err.Error())
+		}
 	}
 
 	// loop for messages
@@ -377,11 +414,11 @@ func main() {
 					if len(m.CurDatabase) < 1 {
 						m.CurDatabase = "cur"
 					}
-					columns, s3path, curDate, err := processCUR(m, topLevelDestPath, logger)
+					columns, s3path, curDate, err := processCUR(m, topLevelDestPath, scratchDir, logger)
 					if err != nil {
 						doLog(logger, "Failed to process CUR conversion for report: "+m.CurReportDescriptor+", error: "+err.Error())
 					} else {
-						if err = createAthenaTable(sess, m.CurReportDescriptor, m.CurDatabase, columns, s3path, meta, curDate); err != nil {
+						if err = createAthenaTable(sess, m, columns, s3path, meta, curDate); err != nil {
 							doLog(logger, "Falied to create/update Athena tables, report: "+m.CurReportDescriptor+" error: "+err.Error())
 						} else {
 							// send back success of processing messages
