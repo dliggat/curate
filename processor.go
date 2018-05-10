@@ -73,6 +73,7 @@ func getASGForInstance(sess *session.Session, instanceID string) (string, error)
 		if err == nil && len(resp.AutoScalingInstances) > 0 && len(*resp.AutoScalingInstances[0].AutoScalingGroupName) > 0 {
 			return *resp.AutoScalingInstances[0].AutoScalingGroupName, nil
 		}
+		time.Sleep(time.Second * time.Duration(5*i))
 	}
 	return "", fmt.Errorf("Failed to fetch ASG Name for %s", instanceID)
 }
@@ -342,12 +343,12 @@ func main() {
 			log.Fatal("Could not initalize Cloudwatch logger: " + err.Error())
 		}
 		defer logger.Close()
-		doLog(logger, "curate running on "+meta["instanceId"].(string)+" in "+meta["availabilityZone"].(string))
 
 		asgName, err = getASGForInstance(sess, meta["instanceId"].(string))
-		doLog(logger, "curate running within asg: "+asgName)
 		if err != nil {
-			doLog(logger, "couldnt find ASG for "+meta["instanceId"].(string))
+			doLog(logger, "couldnt find ASG for "+meta["instanceId"].(string)+"in "+meta["availabilityZone"].(string))
+		} else {
+			doLog(logger, "curate running on "+meta["instanceId"].(string)+" witin "+asgName+" in "+meta["availabilityZone"].(string))
 		}
 	}
 
