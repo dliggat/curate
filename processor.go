@@ -343,10 +343,11 @@ func main() {
 			log.Fatal("Could not initalize Cloudwatch logger: " + err.Error())
 		}
 		defer logger.Close()
+		doLog(logger, "curate runnning on "+meta["instanceId"].(string)+"in "+meta["availabilityZone"].(string))
 
 		asgName, err = getASGForInstance(sess, meta["instanceId"].(string))
 		if err != nil {
-			doLog(logger, "couldnt find ASG for "+meta["instanceId"].(string)+"in "+meta["availabilityZone"].(string))
+			doLog(logger, "couldnt find ASG for "+meta["instanceId"].(string)+"in "+meta["availabilityZone"].(string)+" Error: "+err.Error())
 		} else {
 			doLog(logger, "curate running on "+meta["instanceId"].(string)+" witin "+asgName+" in "+meta["availabilityZone"].(string))
 		}
