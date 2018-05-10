@@ -62,21 +62,19 @@ func (ip *instanceProtection) set(state bool) error {
 
 func getASGForInstance(sess *session.Session, instanceID string) (string, error) {
 	svc := autoscaling.New(sess)
-	resp, err := svc.DescribeAutoScalingInstances(
-		&autoscaling.DescribeAutoScalingInstancesInput{
-			InstanceIds: []*string{
-				aws.String(instanceID),
-			},
-			MaxRecords: aws.Int64(1),
-		})
-	if err != nil {
-		return "", err
+	for i := 1; i < 6; i++ {
+		resp, err := svc.DescribeAutoScalingInstances(
+			&autoscaling.DescribeAutoScalingInstancesInput{
+				InstanceIds: []*string{
+					aws.String(instanceID),
+				},
+				MaxRecords: aws.Int64(1),
+			})
+		if err == nil && len(resp.AutoScalingInstances) > 0 && len(*resp.AutoScalingInstances[0].AutoScalingGroupName) > 0 {
+			return *resp.AutoScalingInstances[0].AutoScalingGroupName, nil
+		}
 	}
-	if len(resp.AutoScalingInstances) < 1 {
-		return "", err
-	}
-	asgName := resp.AutoScalingInstances[0].AutoScalingGroupName
-	return *asgName, nil
+	return "", fmt.Errorf("Failed to fetch ASG Name for %s", instanceID)
 }
 
 func waitForASGStatus(sess *session.Session, instanceID string, state string) error {
@@ -347,6 +345,7 @@ func main() {
 		doLog(logger, "curate running on "+meta["instanceId"].(string)+" in "+meta["availabilityZone"].(string))
 
 		asgName, err = getASGForInstance(sess, meta["instanceId"].(string))
+		doLog(logger, "curate running within asg: "+asgName)
 		if err != nil {
 			doLog(logger, "couldnt find ASG for "+meta["instanceId"].(string))
 		}
