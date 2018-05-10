@@ -312,9 +312,10 @@ Resources:
           "Fn::Sub":
             - |-
               #!/bin/bash
-              mkdir /scratch
+              mkdir -m 600 /scratch
               mkfs -t ext4 ${scratch_mount}
-              mount -t ext4 -o nosuid -w -m 600 ${scratch_mount} /scratch
+              mount -t ext4 -o nosuid -w ${scratch_mount} /scratch
+              chmod 600 /scratch
               yum install -y git
               git clone ${git_repo} repo
               cd repo              
