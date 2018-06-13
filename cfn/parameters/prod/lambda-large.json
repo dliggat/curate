@@ -11,7 +11,7 @@
   },
   {
     "ParameterKey": "ScheduleExpression",
-    "ParameterValue": "rate(1 minute)",
+    "ParameterValue": "rate(24 hours)",
     "UsePreviousValue": false
   },
   {
@@ -30,23 +30,28 @@
     "UsePreviousValue": false
   },
   {
-    "ParameterKey": "SubnetAZ0ExportIdentifier",
-    "ParameterValue": "curate-prod-PrivateSubnetAZ0",
+    "ParameterKey": "VisibilityTimeout",
+    "ParameterValue": "14400",
     "UsePreviousValue": false
   },
   {
-    "ParameterKey": "SubnetAZ1ExportIdentifier",
-    "ParameterValue": "curate-prod-PrivateSubnetAZ1",
+    "ParameterKey": "MessageRetentionPeriod",
+    "ParameterValue": "86400",
     "UsePreviousValue": false
   },
   {
-    "ParameterKey": "VpcExportIdentifier",
-    "ParameterValue": "curate-prod-VpcId",
+    "ParameterKey": "MessageRedriveCount",
+    "ParameterValue": "3",
     "UsePreviousValue": false
   },
   {
-    "ParameterKey": "LambdaVPCSecurityGroupExportIdenifier",
-    "ParameterValue": "curate-prod-LambdaVPCSGIdentifier",
+    "ParameterKey": "TableSuffix",
+    "ParameterValue": "config-large",
+    "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "LambdaProcessSize",
+    "ParameterValue": "large",
     "UsePreviousValue": false
   }
 ]

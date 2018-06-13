@@ -41,6 +41,14 @@ Parameters:
     Type: String
     Description: Suffix for the DyanamoDB Table. Table Name will be <projectname>-<environemtname>-<tablesuffix>
 
+  LambdaProcessSize:
+    Type: String
+    Description: The types of elements to process and add to SQS queue - valid entries "small", "medium", "large"
+    AllowedValues:
+      - small
+      - medium
+      - large
+
 Conditions:
   HasSchedule:
     "Fn::Not":
@@ -62,7 +70,9 @@ Resources:
   DeadLetterQueue:
     Type: "AWS::SQS::Queue"
     Properties:
-      QueueName: DeadLetterQueue
+      QueueName:
+        Fn::Sub:
+          "${ProjectName}-${EnvironmentName}-${LambdaProcessSize}-DLQ"
       MessageRetentionPeriod: { Ref: MessageRetentionPeriod }
       VisibilityTimeout: { Ref: VisibilityTimeout }
 
@@ -100,19 +110,19 @@ Resources:
                   d = datetime.datetime.now()
                   d -= datetime.timedelta(days=31) # doesnt need to be accurate, but needs to be in previous month
                   while 'LastEvaluatedKey' in response:
-                      response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-                      data.extend(response['Items'])
+                    response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+                    data.extend(response['Items'])
 
                   for item in data:
-                      payload = json.dumps(item)
-                      client.send_message(QueueUrl=queue_url, MessageBody=payload)
+                    payload = json.dumps(item)
+                    client.send_message(QueueUrl=queue_url, MessageBody=payload)
 
-                      # Process previous months CUR at certain periods of the new month. Previous CUR gets updated due to credits, EDP discounts etc post months completion
-                      if (d.day >= 4 and d.day <= 8) or (d.day >= 14 and d.day <= 16):
-                        if d.hour > 2 and d.hour < 14:
-                          item["date"] = d.strftime("%Y%m%d")
-                          payload = json.dumps(item)
-                          client.send_message(QueueUrl=queue_url, MessageBody=payload)
+                    # Process previous months CUR at certain periods of the new month. Previous CUR gets updated due to credits, EDP discounts etc post months completion
+                    if (d.day >= 4 and d.day <= 8) or (d.day >= 14 and d.day <= 16):
+                      if d.hour > 2 and d.hour < 14:
+                        item["date"] = d.strftime("%Y%m%d")
+                        payload = json.dumps(item)
+                        client.send_message(QueueUrl=queue_url, MessageBody=payload)
 
             - table: { Ref: ResultTable }
               queue_url: { Ref: Queue }
@@ -285,6 +295,7 @@ Outputs:
           - - { Ref: ProjectName }
             - { Ref: EnvironmentName }
             - queue
+            - { Ref: LambdaProcessSize }
             - url
   QueueArn:
     Value:
@@ -296,6 +307,7 @@ Outputs:
           - - { Ref: ProjectName }
             - { Ref: EnvironmentName }
             - queue
+            - { Ref: LambdaProcessSize }
             - arn
   QueueName:
     Value:
@@ -307,6 +319,7 @@ Outputs:
           - - { Ref: ProjectName }
             - { Ref: EnvironmentName }
             - queue
+            - { Ref: LambdaProcessSize }
             - name
   LambdaFunction:
     Value: { Ref : LambdaFunction }

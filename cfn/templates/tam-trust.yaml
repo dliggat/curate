@@ -167,14 +167,26 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS:
-                "Fn::ImportValue":
-                  "Fn::Join":
-                    - "-"
-                    - - { Ref: ProjectName }
-                      - { Ref: EnvironmentName }
-                      - "asg"
-                      - "instanceprofile"
-                      - "arn"
+                - 
+                  "Fn::ImportValue":
+                    "Fn::Join":
+                      - "-"
+                      - - { Ref: ProjectName }
+                        - { Ref: EnvironmentName }
+                        - "asg"
+                        - "small"
+                        - "instanceprofile"
+                        - "arn"
+                - 
+                  "Fn::ImportValue":
+                    "Fn::Join":
+                      - "-"
+                      - - { Ref: ProjectName }
+                        - { Ref: EnvironmentName }
+                        - "asg"
+                        - "large"
+                        - "instanceprofile"
+                        - "arn"
             Action:
               - kms:Encrypt
               - kms:GenerateDataKey
@@ -187,6 +199,57 @@ Resources:
             Action:
               - kms:Decrypt
             Resource: "*"
+  
+  KmsResultKeyAlias:
+    Type: "AWS::KMS::Alias"
+    DependsOn: KmsResultKey
+    Properties:
+      AliasName:
+        "Fn::Sub": "alias/${ProjectName}-${EnvironmentName}-${DatabaseName}-result-key"
+      TargetKeyId: { Ref: KmsResultKey }
+
+  KmsResultKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Description: 
+        "Fn::Sub": "KMS TAM Result key for ${ProjectName}-${EnvironmentName}-${DatabaseName}"
+      Enabled: true
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "KeyPolicyForKMS"
+        Statement:
+          - Sid: "CURate Admin Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/Admin"
+            Action:
+              - kms:Create*
+              - kms:Describe*
+              - kms:Enable*
+              - kms:List*
+              - kms:Put*
+              - kms:Update*
+              - kms:Revoke*
+              - kms:Disable*
+              - kms:Get*
+              - kms:Delete*
+              - kms:TagResource
+              - kms:UntagResource
+              - kms:ScheduleKeyDeletion
+              - kms:CancelKeyDeletion
+            Resource: "*"
+          - Sid: "CURate TAM Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                "Fn::GetAtt": [CrossAccountRole, Arn]
+            Action:
+              - kms:Decrypt
+              - kms:Encrypt
+              - kms:GenerateDataKey
+            Resource: "*"
 
 
 Outputs:
@@ -197,7 +260,6 @@ Outputs:
       "Fn::GetAtt":
         - CrossAccountRole
         - Arn
-
   SigninUrl:
     Value:
       "Fn::Join":
@@ -206,8 +268,17 @@ Outputs:
           - { Ref: "AWS::AccountId" }
           - "&roleName="
           - { Ref: CrossAccountRole }
+  KmsDataKey:
+    Value: { Ref: KmsDataKeyAlias }
   KmsDataKeyArn:
     Value:
       "Fn::GetAtt":
         - KmsDataKey
+        - Arn
+  KmsResultKey:
+    Value: { Ref: KmsResultKeyAlias }
+  KmsResultKeyArn:
+    Value:
+      "Fn::GetAtt":
+        - KmsResultKey
         - Arn

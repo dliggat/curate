@@ -39,6 +39,14 @@ Parameters:
 
   LambdaVPCSecurityGroupExportIdenifier:
     Type: String
+  
+  SQSProcessingQueue:
+    Type: String
+    Description: The size of the ASG to use - valid entries "small", "medium", "large"
+    AllowedValues:
+      - small
+      - medium
+      - large
 
 Conditions:
   HasSchedule:
@@ -151,6 +159,7 @@ Resources:
                     - - { Ref: ProjectName }
                       - { Ref: EnvironmentName }
                       - queue
+                      - { Ref: SQSProcessingQueue }
                       - url
               queue_name: 
                 "Fn::ImportValue":
@@ -159,6 +168,7 @@ Resources:
                     - - { Ref: ProjectName }
                       - { Ref: EnvironmentName }
                       - queue
+                      - { Ref: SQSProcessingQueue }
                       - name
               asg_name:
                 "Fn::ImportValue":
@@ -167,6 +177,7 @@ Resources:
                     - - { Ref: ProjectName }
                       - { Ref: EnvironmentName }
                       - "asg"
+                      - { Ref: SQSProcessingQueue }
                       - "name"
 
       Role: { "Fn::GetAtt": [ LambdaFunctionExecutionRole, Arn ] }
@@ -234,6 +245,7 @@ Resources:
                         - - { Ref: ProjectName }
                           - { Ref: EnvironmentName }
                           - queue
+                          - { Ref: SQSProcessingQueue }
                           - arn
               - Effect: Allow
                 Action:
