@@ -202,29 +202,39 @@ func createUpdateAthenaTable(sess *session.Session, m Message, columns []curconv
 		if awsErr, ok := err.(awserr.Error); ok {
 			if awsErr.Code() == glue.ErrCodeEntityNotFoundException {
 				// Table doesnt exist create it
-				createAthenaTable(sess, m, columns, s3path, meta, curDate)
-			} else {
-				return errors.New("Failed to check existing table, error: " + awsErr.Message())
+				if err = createAthenaTable(sess, m, columns, s3path, meta, curDate); err != nil {
+					return errors.New("Failed to create new table, error: " + err.Error())
+				}
+				return nil
 			}
-		} else {
-			return errors.New("Failed to check existing table, error: " + err.Error())
+			return errors.New("Failed to check existing table, error: " + awsErr.Message())
 		}
+		return errors.New("Failed to check existing table, error: " + err.Error())
 	}
 
 	var cols []*glue.Column
 	for col := range columns {
 		col := &glue.Column{
 			Name: aws.String(columns[col].Name),
-			Type: aws.String(columns[col].Type)}
+			Type: aws.String(strings.ToLower(columns[col].Type))}
 		cols = append(cols, col)
 	}
+
+	storageDesc := resp.Table.StorageDescriptor
+	storageDesc.SetColumns(cols)
 
 	// update column info in existing table
 	updateTableInput := &glue.UpdateTableInput{
 		DatabaseName: aws.String(m.CurDatabase),
 		TableInput: &glue.TableInput{
 			Name:              aws.String(table),
-			StorageDescriptor: &glue.StorageDescriptor{Columns: cols}}}
+			Description:       resp.Table.Description,
+			Owner:             resp.Table.Owner,
+			Parameters:        resp.Table.Parameters,
+			PartitionKeys:     resp.Table.PartitionKeys,
+			Retention:         resp.Table.Retention,
+			TableType:         resp.Table.TableType,
+			StorageDescriptor: storageDesc}}
 
 	if _, err := svcGlue.UpdateTable(updateTableInput); err != nil {
 		return errors.New("Error updating table column info, error: " + err.Error())
