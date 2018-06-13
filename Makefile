@@ -1,17 +1,18 @@
-.PHONY: _check-params _check-template create-stack update-stack delete-stack describe-stack build put-ddb add-job
+.PHONY: _check-params _check-template create-stack update-stack delete-stack describe-stack build put-ddb put-ddb-large add-job
 BINARY = processor
 
 # Read the cloudformation/parameters.json file for the ProjectName and EnvionmentName.
 # Use these to name the CloudFormation stack.
 PROJECT_NAME = $(shell cat cfn/parameters/$(PARAMS).json | python -c 'import sys, json; j = [i for i in json.load(sys.stdin) if i["ParameterKey"]=="ProjectName"][0]["ParameterValue"]; print j')
 ENVIRONMENT_NAME = $(shell cat cfn/parameters/$(PARAMS).json | python -c 'import sys, json; j = [i for i in json.load(sys.stdin) if i["ParameterKey"]=="EnvironmentName"][0]["ParameterValue"]; print j')
+SIZE = $(shell cat cfn/parameters/$(PARAMS).json | python -c 'import sys, json; j = [i for i in json.load(sys.stdin) if i["ParameterKey"]=="SQSProcessingQueue"][0]["ParameterValue"]; print j')
 ifdef SUFFIX
 	STACK_NAME = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-$(TEMPLATE)-$(SUFFIX)-stack
 else
 	STACK_NAME = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-$(TEMPLATE)-stack
 endif
 JSON = $(shell cat ./data/$(DATA).json | python -c 'import sys, json; j = json.load(sys.stdin); d = {k:v["S"] for k,v in j.iteritems()}; print(json.dumps(d));')
-QUEUE = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-queue-url
+QUEUE = $(PROJECT_NAME)-$(ENVIRONMENT_NAME)-queue-$(SIZE)-url
 QUEUEURL = $(shell aws cloudformation list-exports --query 'Exports[?Name==`$(QUEUE)`].Value' --output text)
 
 _check-params:
@@ -52,6 +53,9 @@ build:
 
 put-ddb:
 	aws dynamodb put-item --table-name curate-prod-config --item file://data/$(DATA).json
+
+put-ddb-large:
+	aws dynamodb put-item --table-name curate-prod-config-large --item file://data/$(DATA).json
 
 put-ddb-dev:
 	aws dynamodb put-item --table-name curate-dev-config --item file://data/$(DATA).json

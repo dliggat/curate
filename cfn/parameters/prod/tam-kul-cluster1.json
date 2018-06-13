@@ -1,4 +1,4 @@
-[
+  [
   {
     "ParameterKey": "ProjectName",
     "ParameterValue": "curate",
@@ -11,12 +11,12 @@
   },
   {
     "ParameterKey": "DatabaseName",
-    "ParameterValue": "yvr_goat",
+    "ParameterValue": "kul_cluster1",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "AWSAccounts",
-    "ParameterValue": "433468561249,268368477672,520248103882",
+    "ParameterValue": "801005690916,433468561249",
     "UsePreviousValue": false
   }
 ]

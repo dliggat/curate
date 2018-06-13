@@ -11,12 +11,12 @@
   },
   {
     "ParameterKey": "DatabaseName",
-    "ParameterValue": "yvr_goat",
+    "ParameterValue": "lin_italy1",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "AWSAccounts",
-    "ParameterValue": "433468561249,268368477672,520248103882",
+    "ParameterValue": "036614243073,580513408143,602432262125",
     "UsePreviousValue": false
   }
 ]

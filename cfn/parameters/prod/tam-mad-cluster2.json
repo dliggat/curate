@@ -11,12 +11,12 @@
   },
   {
     "ParameterKey": "DatabaseName",
-    "ParameterValue": "yvr_goat",
+    "ParameterValue": "mad_cluster2",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "AWSAccounts",
-    "ParameterValue": "433468561249,268368477672,520248103882",
+    "ParameterValue": "208442788671,740568098639,760086782328",
     "UsePreviousValue": false
   }
 ]

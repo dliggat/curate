@@ -11,12 +11,12 @@
   },
   {
     "ParameterKey": "DatabaseName",
-    "ParameterValue": "yvr_goat",
+    "ParameterValue": "yvr_grouse",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "AWSAccounts",
-    "ParameterValue": "433468561249,268368477672,520248103882",
+    "ParameterValue": "721582857616,351322994895,433468561249,268368477672",
     "UsePreviousValue": false
   }
 ]

@@ -11,12 +11,12 @@
   },
   {
     "ParameterKey": "DatabaseName",
-    "ParameterValue": "yvr_goat",
+    "ParameterValue": "sea_adobe",
     "UsePreviousValue": false
   },
   {
     "ParameterKey": "AWSAccounts",
-    "ParameterValue": "433468561249,268368477672,520248103882",
+    "ParameterValue": "888418837284,843151858690,787563682195,583875035373,456038447595,839427094235,433468561249",
     "UsePreviousValue": false
   }
 ]
