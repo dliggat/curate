@@ -83,5 +83,10 @@
     "ParameterKey": "BlockVolumeSizeScratch",
     "ParameterValue": "20",
     "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SQSProcessingQueue",
+    "ParameterValue": "small",
+    "UsePreviousValue": false
   }
 ]

@@ -48,5 +48,10 @@
     "ParameterKey": "LambdaVPCSecurityGroupExportIdenifier",
     "ParameterValue": "curate-dev-LambdaVPCSGIdentifier",
     "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "SQSProcessingQueue",
+    "ParameterValue": "small",
+    "UsePreviousValue": false
   }
 ]

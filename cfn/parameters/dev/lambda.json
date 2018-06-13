@@ -48,5 +48,10 @@
     "ParameterKey": "TableSuffix",
     "ParameterValue": "config",
     "UsePreviousValue": false
+  },
+  {
+    "ParameterKey": "LambdaProcessSize",
+    "ParameterValue": "small",
+    "UsePreviousValue": false
   }
 ]
