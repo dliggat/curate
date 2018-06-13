@@ -18,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/athena"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/glue"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -185,6 +186,50 @@ func sendQuery(svc *athena.Athena, db string, sql string, account string, region
 	if *qrop.QueryExecution.Status.State != "SUCCEEDED" {
 		return errors.New("Error Querying Athena, completion state is NOT SUCCEEDED, state is: " + *qrop.QueryExecution.Status.State)
 	}
+	return nil
+}
+
+func createUpdateAthenaTable(sess *session.Session, m Message, columns []curconvert.CurColumn, s3path string, meta map[string]interface{}, curDate string) error {
+	svcGlue := glue.New(sess)
+	table := m.CurReportDescriptor + "_" + curDate
+
+	// if Table exists and if so update it - otherwise create it
+	resp, err := svcGlue.GetTable(&glue.GetTableInput{
+		DatabaseName: aws.String(m.CurDatabase),
+		Name:         aws.String(table)})
+
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() == glue.ErrCodeEntityNotFoundException {
+				// Table doesnt exist create it
+				createAthenaTable(sess, m, columns, s3path, meta, curDate)
+			} else {
+				return errors.New("Failed to check existing table, error: " + awsErr.Message())
+			}
+		} else {
+			return errors.New("Failed to check existing table, error: " + err.Error())
+		}
+	}
+
+	var cols []*glue.Column
+	for col := range columns {
+		col := &glue.Column{
+			Name: aws.String(columns[col].Name),
+			Type: aws.String(columns[col].Type)}
+		cols = append(cols, col)
+	}
+
+	// update column info in existing table
+	updateTableInput := &glue.UpdateTableInput{
+		DatabaseName: aws.String(m.CurDatabase),
+		TableInput: &glue.TableInput{
+			Name:              aws.String(table),
+			StorageDescriptor: &glue.StorageDescriptor{Columns: cols}}}
+
+	if _, err := svcGlue.UpdateTable(updateTableInput); err != nil {
+		return errors.New("Error updating table column info, error: " + err.Error())
+	}
+
 	return nil
 }
 
@@ -418,7 +463,7 @@ func main() {
 					if err != nil {
 						doLog(logger, "Failed to process CUR conversion for report: "+m.CurReportDescriptor+", error: "+err.Error())
 					} else {
-						if err = createAthenaTable(sess, m, columns, s3path, meta, curDate); err != nil {
+						if err = createUpdateAthenaTable(sess, m, columns, s3path, meta, curDate); err != nil {
 							doLog(logger, "Falied to create/update Athena tables, report: "+m.CurReportDescriptor+" error: "+err.Error())
 						} else {
 							// send back success of processing messages
